@@ -14,7 +14,7 @@ setup(
     version=u'3.35.20028',
     url=u'https://github.com/klahnakoski/jx-bigquery',
     python_requires=u'==2.7, ==3.6, ==3.7, ==3.8',
-    packages=["jx_mysql/expressions","jx_mysql"],
+    packages=["jx_mysql"],
     long_description=u'# jx-mysql\nJSON query expressions for MySQL, and derivatives\n',
     name=u'jx-mysql'
 )
