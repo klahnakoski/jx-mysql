@@ -1,2 +1,3 @@
 # jx-mysql
-JSON query expressions for MySQL, and derivatives
+
+JSON query expressions for MySQL, plus [the snowflake extractor](docs/snowflake_extractor.md)
