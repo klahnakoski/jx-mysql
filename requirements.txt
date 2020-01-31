@@ -11,4 +11,3 @@ pyLibrary
 mo-collections
 mo-math
 pymysql
-fabric2
