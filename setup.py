@@ -8,12 +8,12 @@ setup(
     classifiers=["Development Status :: 4 - Beta","Topic :: Software Development :: Libraries","Topic :: Software Development :: Libraries :: Python Modules","License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)","Programming Language :: Python :: 2.7","Programming Language :: Python :: 3.6","Programming Language :: Python :: 3.7","Programming Language :: Python :: 3.8"],
     description='jx-mysql - JSON Expressions for MySQL',
     include_package_data=True,
-    install_requires=["fabric2","jx-python>=3.43.20031","mo-collections>=3.38.20029","mo-dots>=3.41.20031","mo-files>=3.41.20031","mo-future>=3.40.20031","mo-json>=3.38.20029","mo-kwargs>=3.38.20029","mo-logs>=3.38.20029","mo-math>=3.41.20031","mo-sql>=3.38.20031","mo-times>=3.38.20029","pyLibrary>=3.40.20031","pymysql"],
+    install_requires=["jx-python>=3.43.20031","mo-collections>=3.38.20029","mo-dots>=3.41.20031","mo-files>=3.41.20031","mo-future>=3.40.20031","mo-json>=3.38.20029","mo-kwargs>=3.38.20029","mo-logs>=3.38.20029","mo-math>=3.41.20031","mo-sql>=3.38.20031","mo-times>=3.38.20029","pyLibrary>=3.40.20031","pymysql"],
     license='MPL 2.0',
     long_description='# jx-mysql\n\nJSON query expressions for MySQL, plus [the snowflake extractor](docs/snowflake_extractor.md)\n',
     long_description_content_type='text/markdown',
     name='jx-mysql',
     packages=["jx_mysql"],
     url='https://github.com/klahnakoski/jx-bigquery',
-    version='3.43.20031'
+    version='3.44.20031'
 )
