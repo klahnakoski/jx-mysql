@@ -16,10 +16,10 @@
     "install_requires": [
              "jx-python>=3.43.20031", "mo-collections>=3.38.20029",
                "mo-dots>=3.41.20031",       "mo-files>=3.41.20031",
-             "mo-future>=3.40.20031",        "mo-json>=3.38.20029",
+             "mo-future>=3.45.20031",        "mo-json>=3.38.20029",
              "mo-kwargs>=3.38.20029",        "mo-logs>=3.38.20029",
                "mo-math>=3.41.20031",         "mo-sql>=3.38.20031",
-              "mo-times>=3.38.20029",      "pyLibrary>=3.40.20031",
+              "mo-times>=3.38.20029",      "pyLibrary>=3.45.20031",
                            "pymysql"
     ],
     "license": "MPL 2.0",
@@ -36,5 +36,5 @@
     "name": "jx-mysql",
     "packages": ["jx_mysql"],
     "url": "https://github.com/klahnakoski/jx-bigquery",
-    "version": "3.44.20031"
+    "version": "3.45.20031"
 }
