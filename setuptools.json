@@ -35,7 +35,6 @@
     "long_description_content_type": "text/markdown",
     "name": "jx-mysql",
     "packages": ["jx_mysql"],
-    "python_requires": "==2.7, ==3.6, ==3.7, ==3.8",
     "url": "https://github.com/klahnakoski/jx-bigquery",
     "version": "3.38.20029"
 }
