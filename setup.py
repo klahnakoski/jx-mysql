@@ -15,5 +15,5 @@ setup(
     name='jx-mysql',
     packages=["jx_mysql"],
     url='https://github.com/klahnakoski/jx-bigquery',
-    version='3.48.20042'
+    version='3.49.20042'
 )
