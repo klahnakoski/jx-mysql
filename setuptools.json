@@ -14,12 +14,12 @@
     "description": "jx-mysql - JSON Expressions for MySQL",
     "include_package_data": true,
     "install_requires": [
-             "jx-python>=3.43.20031", "mo-collections>=3.46.20032",
-               "mo-dots>=3.46.20032",       "mo-files>=3.41.20031",
-             "mo-future>=3.45.20031",        "mo-json>=3.38.20029",
-             "mo-kwargs>=3.38.20029",        "mo-logs>=3.46.20032",
-               "mo-math>=3.41.20031",         "mo-sql>=3.38.20031",
-              "mo-times>=3.46.20032",      "pyLibrary>=3.46.20032",
+             "jx-python>=3.47.20042", "mo-collections>=3.46.20032",
+               "mo-dots>=3.47.20042",       "mo-files>=3.41.20031",
+             "mo-future>=3.47.20042",        "mo-json>=3.47.20042",
+             "mo-kwargs>=3.47.20042",        "mo-logs>=3.47.20042",
+               "mo-math>=3.41.20031",         "mo-sql>=3.47.20042",
+              "mo-times>=3.46.20032",      "pyLibrary>=3.47.20042",
                            "pymysql"
     ],
     "license": "MPL 2.0",
@@ -36,5 +36,5 @@
     "name": "jx-mysql",
     "packages": ["jx_mysql"],
     "url": "https://github.com/klahnakoski/jx-bigquery",
-    "version": "3.46.20032"
+    "version": "3.47.20042"
 }
