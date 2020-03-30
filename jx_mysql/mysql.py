@@ -8,19 +8,16 @@
 
 from __future__ import absolute_import, division, unicode_literals
 
-import ssl
 import subprocess
 from datetime import datetime
 from urllib.parse import unquote
 
-from pyLibrary.meta import cache
-from pymysql import InterfaceError, connect, cursors
-
-from mo_json import TIME, scrub, INTEGER, STRING, NUMBER, INTERVAL
 from jx_python import jx
 from mo_dots import coalesce, is_data, listwrap, unwrap, wrap, Data
 from mo_files import File, URL
 from mo_future import is_binary, is_text, text, transpose, utf8_json_encoder, first
+from mo_http import http
+from mo_json import TIME, scrub, INTEGER, STRING, NUMBER, INTERVAL
 from mo_kwargs import override
 from mo_logs import Log, Except, suppress_exception, strings
 from mo_logs.strings import expand_template, indent, outdent
@@ -31,7 +28,8 @@ from mo_sql import SQL, SQL_AND, SQL_ASC, SQL_DESC, SQL_FROM, SQL_IS_NULL, SQL_L
     SQL_GT
 from mo_times import Date, DAY
 from pyLibrary import convert
-from pyLibrary.env import http
+from pyLibrary.meta import cache
+from pymysql import InterfaceError, connect, cursors
 
 DEBUG = False
 MAX_BATCH_SIZE = 1
