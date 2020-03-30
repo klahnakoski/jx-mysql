@@ -373,7 +373,7 @@ class MySQL(object):
             self.debug and Log.note("Execute SQL:\n{{sql}}", sql=indent(sql))
             self.cursor.execute(sql)
 
-            columns = tuple([utf8_to_unicode(d[0]) for d in self.cursor.description])
+            columns = tuple([utf8_to_unicode(d[0].lower()) for d in self.cursor.description])
             for r in self.cursor:
                 num += 1
                 _execute(wrap(dict(zip(columns, [utf8_to_unicode(c) for c in r]))))
