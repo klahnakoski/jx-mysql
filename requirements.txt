@@ -5,6 +5,7 @@ jx-python
 mo-future
 mo-kwargs
 mo-logs
+mo-http
 mo-sql
 mo-times
 pyLibrary

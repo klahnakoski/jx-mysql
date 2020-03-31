@@ -12,7 +12,7 @@ The snowflake schema is used to generate a JSON document for each record in the 
 
 The denormalization process involves walking all foreign key paths, breadth first and without cycles, from the fact table outward.  This creates a snowflake subset-schema from the original database. This walk requires some guidance to make the JSON beautiful.
 
-Each fact table is uses a configuration file to control the denormalization process. There are three major properties.  I will use the Treeherder job extract configuration as an example:  
+Each fact table uses a configuration file to control the denormalization process. I will use the Treeherder job extract configuration as an example:  
  
 
 ### Configuration
@@ -54,10 +54,10 @@ The `snowflake` object limits the relational walk used to determine the JSON doc
 			"$ref": "~/private.json#treeherder"
 		}
 
-* **`fact_table`** - *required* - name of the table that represents the facts being pulled. **MySQL-to-S3** can generate nested documents, so you need not choose the finest grain if you are fine with large documents.  For Treeherder, we are interested in the `job` facts.
+* **`fact_table`** - *required* - name of the table that represents the facts being pulled. `snowflake_extractor` can generate nested documents, so you need not choose the finest grain if you are fine with large documents.  For Treeherder, we are interested in the `job` facts.
 * **`show_foreign_keys`** - *default true* - Include the foreign key ids. This is useful if you require those ids for later synchronization. If you are only interested in the relationships, then they can be left out, and the JSON will be simpler.
 * **`null_values`** - Some databases use a variety of values that indicate *no value*. The database `NULL` is always considered missing, and these values are mapped to `NULL` too.
-* **`add_relations`** -  Relations are important for the denormalization. If your database is missing relations, you can add them here. They must be in `<schema>.<table>.<column>` form. Most missing relations are ones that cross schema boundaries; **MySQL-to-S3** can reach across those boundaries for complete denormalization.
+* **`add_relations`** -  Relations are important for the denormalization. If your database is missing relations, you can add them here. They must be in `<schema>.<table>.<column>` form. Most missing relations are ones that cross schema boundaries; `snowflake_extractor` can reach across those boundaries for complete denormalization.
 * **`name_relations`** - By default many-to-one relations use the column name for the property, while one-to-many relations use the referenced table name. You can change this to more convenient names, or remove ambiguity by adding relations and their respective names. Use `->` for many-to-one and `<-` for one-to-many.
 * **`exclude`** - Some tables are not needed: They may be irrelevant for the extraction process, or they may contain sensitive information, or you may not have permissions to access the contents. In all these cases, the tables can be added to this list. For the Treeherder example, there are many `exclude` entries; this is to avoid pulling the Perfherder facts, which we pull using separate configuration. You may exclude just a single column using `<table>.<column>` format
 * **`exclude_path`** - Some paths lead to lookup table pointed to by other facts. These facts are desired, just not in this path. This also excludes subpaths.
