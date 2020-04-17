@@ -104,7 +104,7 @@ class MySQL(object):
                 self.settings.host = hp
 
         # SSL PEM
-        if self.settings.host in ("localhost", "mysql"):
+        if self.settings.host in ("localhost", "mysql", '127.0.0.1'):
             ssl_context = None
         else:
             if self.settings.ssl and not self.settings.ssl.pem:
