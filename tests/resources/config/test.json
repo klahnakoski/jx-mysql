@@ -1,0 +1,12 @@
+{
+
+	"database": {
+		"debug": true,
+		"schema": "testing",
+		"$ref": "~/private.json#test_database"
+	},
+	"debug":{
+		"trace":true
+	}
+
+}

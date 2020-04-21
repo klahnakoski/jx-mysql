@@ -1,0 +1,31 @@
+{
+	"extract": {
+		"threads": 2,
+		"last": "output/treeherder_last_run.json",
+		"field": [
+			"last_modified",
+			"id"
+		],
+		"type": [
+			"time",
+			"number"
+		],
+		"start": [
+			"1jan2015",
+			0
+		],
+		"batch": [
+			"day",
+			1000
+		]
+	},
+	"destination": "tests/output/test_treeherder_output.json",
+	"$ref":"../../../resources/config/treeherder.json",
+	"constants":{
+		"mysql_to_s3.snowflake_schema.DEBUG": true
+	},
+	"debug":{
+		"trace":true,
+		"cprofile":false
+	}
+}
