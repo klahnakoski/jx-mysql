@@ -35,6 +35,8 @@ DEBUG = False
 MAX_BATCH_SIZE = 1
 EXECUTE_TIMEOUT = 5 * 600 * 1000  # in milliseconds  SET TO ZERO (OR None) FOR HOST DEFAULT TIMEOUT
 
+MYSQL_EXECUTABLE = "mysql"
+
 all_db = []
 
 
@@ -521,7 +523,7 @@ def execute_sql(
     # We have no way to execute an entire SQL file in bulk, so we
     # have to shell out to the commandline client.
     args = [
-        "mysql",
+        MYSQL_EXECUTABLE,
         "-h{0}".format(host),
         "-u{0}".format(username),
         "-p{0}".format(password)
@@ -552,6 +554,7 @@ def execute_sql(
             return_code=proc.returncode,
             output=output
         )
+
 
 @override
 def execute_file(
