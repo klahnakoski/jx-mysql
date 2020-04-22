@@ -36,6 +36,8 @@ INSERT INTO fact_table VALUES (19, 'I', 1);
 INSERT INTO fact_table VALUES (20, 'J', 2);
 INSERT INTO fact_table VALUES (21, 'K', 3);
 INSERT INTO fact_table VALUES (22, 'L', NULL);
+INSERT INTO fact_table VALUES (30, NULL, NULL);
+
 
 CREATE TABLE nested1 (
 	id          INT NOT NULL PRIMARY KEY,
@@ -58,6 +60,7 @@ insert into nested1 VALUES (108, 17, 'iii', -2);
 insert into nested1 VALUES (109, 17, 'jjj', -2);
 insert into nested1 VALUES (110, 18, 'kkk', NULL);
 insert into nested1 VALUES (111, 18, 'lll', NULL);
+insert into nested1 VALUES (130, 30, NULL, NULL);
 
 
 CREATE TABLE nested2 (
@@ -73,5 +76,6 @@ insert into nested2 VALUES (1001, 100, 4.0, 2);
 insert into nested2 VALUES (1002, 100, 5.1, 3);
 insert into nested2 VALUES (1003, 101, 6.2, 1);
 insert into nested2 VALUES (1004, 102, 7.3, 3);
+insert into nested2 VALUES (1030, 130, 8.4, 3);
 
 commit;

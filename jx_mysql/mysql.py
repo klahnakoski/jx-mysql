@@ -29,7 +29,7 @@ from mo_sql import SQL, SQL_AND, SQL_ASC, SQL_DESC, SQL_FROM, SQL_IS_NULL, SQL_L
 from mo_times import Date, DAY
 from pyLibrary import convert
 from pyLibrary.meta import cache
-from pymysql import InterfaceError, connect, cursors
+from pymysql import connect, cursors
 
 DEBUG = False
 MAX_BATCH_SIZE = 1

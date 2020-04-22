@@ -12,15 +12,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from mo_dots import set_default, wrap, Null
-from mo_files import File
+from mo_dots import set_default, wrap
 from mo_logs import Log, startup, constants
 from mo_sql import SQL
-from mo_testing.fuzzytestcase import FuzzyTestCase
 from mo_times.timer import Timer
 
 from jx_mysql.mysql import MySQL, execute_file
 from jx_mysql.mysql_snowflake_extractor import MySqlSnowflakeExtractor
+from mo_testing.fuzzytestcase import FuzzyTestCase
 
 settings = startup.read_settings(filename="tests/resources/config/test.json")
 constants.set(settings.constants)
@@ -46,7 +45,6 @@ class TestExtract(FuzzyTestCase):
     def setUp(self):
         pass
 
-
     def run_compare(self, config, id_sql, expected):
         db = MySQL(**config.snowflake.database)
         extractor = MySqlSnowflakeExtractor(kwargs=config.snowflake)
@@ -56,100 +54,85 @@ class TestExtract(FuzzyTestCase):
         result = []
         with db.transaction():
             cursor = db.query(sql, stream=True, row_tuples=True)
+            cursor = list(cursor)
             extractor.construct_docs(cursor, result.append, False)
 
         self.assertEqual(result, expected, "expecting identical")
         self.assertEqual(expected, result, "expecting identical")
 
     def test_simple(self):
+        self.run_compare(config_template, "SELECT 22 AS id", expected_results["simple"])
+
+    def test_deep_and_slim(self):
         self.run_compare(
-            config_template,
-            "SELECT 22 AS id",
-            expected_results["simple"]
+            set_default(
+                {
+                    "snowflake": {
+                        "show_foreign_keys": False,
+                        "reference_only": ["inner1.value", "inner2.value"],
+                    }
+                },
+                config_template,
+            ),
+            "SELECT 30 AS id",
+            expected_results["deep_and_slim"]
         )
 
     def test_complex(self):
         self.run_compare(
-            config_template,
-            "SELECT 10 AS id",
-            expected_results["complex"]
+            config_template, "SELECT 10 AS id", expected_results["complex"]
         )
 
     def test_inline(self):
-        config = set_default(
-            {"snowflake": {"reference_only": ["inner1.value", "inner2.value"]}},
-            config_template,
+        self.run_compare(
+            set_default(
+                {"snowflake": {"reference_only": ["inner1.value", "inner2.value"]}},
+                config_template,
+            ),
+            "SELECT 10 AS id",
+            expected_results["inline"],
         )
-        db = MySQL(**config.snowflake.database)
-        extractor = MySqlSnowflakeExtractor(kwargs=config.snowflake)
-
-        sql = extractor.get_sql(SQL("SELECT 10 AS id"))
-
-        result = File(filename).read_json()
-        result[0].etl = None
-        expected = expected_results["inline"]
-        self.assertEqual(result, expected, "expecting identical")
-        self.assertEqual(expected, result, "expecting identical")
 
     def test_lean(self):
-        config = set_default(
-            {"snowflake": {"show_foreign_keys": False}}, config_template
+        self.run_compare(
+            set_default({"snowflake": {"show_foreign_keys": False}}, config_template),
+            "SELECT 10 AS id",
+            expected_results["lean"],
         )
-        db = MySQL(**config.snowflake.database)
-        Extract(kwargs=config).extract(
-            db=db, start_point=Null, first_value=Null, data=[10], please_stop=Null
-        )
-
-        result = File(filename).read_json()
-        result[0].etl = None
-        expected = expected_results["lean"]
-        self.assertEqual(result, expected, "expecting identical")
-        self.assertEqual(expected, result, "expecting identical")
 
     def test_lean_inline(self):
-        config = set_default(
-            {
-                "snowflake": {
-                    "show_foreign_keys": False,
-                    "reference_only": ["inner1.value", "inner2.value"],
-                }
-            },
-            config_template,
+        self.run_compare(
+            set_default(
+                {
+                    "snowflake": {
+                        "show_foreign_keys": False,
+                        "reference_only": ["inner1.value", "inner2.value"],
+                    }
+                },
+                config_template,
+            ),
+            "SELECT 10 AS id",
+            expected_results["lean_inline"],
         )
-        db = MySQL(**config.snowflake.database)
-        Extract(kwargs=config).extract(
-            db=db, start_point=Null, first_value=Null, data=[10], please_stop=Null
-        )
-
-        result = File(filename).read_json()
-        result[0].etl = None
-        expected = expected_results["lean_inline"]
-        self.assertEqual(result, expected, "expecting identical")
-        self.assertEqual(expected, result, "expecting identical")
 
     def test_lean_inline_all(self):
-        config = set_default(
-            {
-                "extract": {"ids": "select * from fact_table"},
-                "snowflake": {
-                    "show_foreign_keys": False,
-                    "reference_only": ["inner1.value", "inner2.value"],
+        self.run_compare(
+            set_default(
+                {
+                    "extract": {"ids": "select * from fact_table"},
+                    "snowflake": {
+                        "show_foreign_keys": False,
+                        "reference_only": ["inner1.value", "inner2.value"],
+                    },
                 },
-            },
-            config_template,
+                config_template,
+            ),
+            "\nUNION ALL\n".join(
+                "SELECT " + str(v) + " AS id"
+                for v in [10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22]
+            ),
+            expected_results["lean_inline_all"],
         )
-        db = MySQL(**config.snowflake.database)
-        data = [10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22]
-        Extract(kwargs=config).extract(
-            db=db, start_point=Null, first_value=Null, data=data, please_stop=Null
-        )
-
-        result = File(filename).read_json()
-        for r in result:
-            r.etl = None
-        expected = expected_results["lean_inline_all"]
-        self.assertEqual(result, expected, "expecting identical")
-        self.assertEqual(expected, result, "expecting identical")
 
 
 filename = "tests/output/test_output.json"
@@ -180,13 +163,14 @@ config_template = wrap(
 
 expected_results = {
     "simple": [{"id": 22, "name": "L"}],
+    "deep_and_slim": [{"id":30, "nested1": [{"nested2": [{"about": "c", "minutia": 8.4},]}],}],
     "lean_inline": [
         {
-            "fact_table": {
-                "about": "a",
-                "id": 10,
-                "name": "A",
-                "nested1": {
+            "about": "a",
+            "id": 10,
+            "name": "A",
+            "nested1": [
+                {
                     "about": 0,
                     "description": "aaa",
                     "nested2": [
@@ -194,17 +178,17 @@ expected_results = {
                         {"about": "b", "minutia": 4},
                         {"about": "c", "minutia": 5.1},
                     ],
-                },
-            }
+                }
+            ],
         }
     ],
     "lean": [
         {
-            "fact_table": {
-                "about": {"value": "a", "time": {"value": 0}},
-                "id": 10,
-                "name": "A",
-                "nested1": {
+            "about": {"value": "a", "time": {"value": 0}},
+            "id": 10,
+            "name": "A",
+            "nested1": [
+                {
                     "about": {"value": 0},
                     "description": "aaa",
                     "nested2": [
@@ -215,8 +199,8 @@ expected_results = {
                         {"about": {"value": "b"}, "minutia": 4},
                         {"about": {"value": "c"}, "minutia": 5.1},
                     ],
-                },
-            },
+                }
+            ],
         }
     ],
     "complex": [
@@ -224,45 +208,47 @@ expected_results = {
             "about": {"id": 1, "time": {"id": -1, "value": 0}, "value": "a"},
             "id": 10,
             "name": "A",
-            "nested1": [{
-                "about": {"id": -1, "value": 0},
-                "description": "aaa",
-                "id": 100,
-                "nested2": [
-                    {
-                        "about": {
-                            "id": 1,
-                            "time": {"id": -1, "value": 0},
-                            "value": "a",
+            "nested1": [
+                {
+                    "about": {"id": -1, "value": 0},
+                    "description": "aaa",
+                    "id": 100,
+                    "nested2": [
+                        {
+                            "about": {
+                                "id": 1,
+                                "time": {"id": -1, "value": 0},
+                                "value": "a",
+                            },
+                            "id": 1000,
+                            "minutia": 3.1415926539,
+                            "ref": 100,
                         },
-                        "id": 1000,
-                        "minutia": 3.1415926539,
-                        "ref": 100,
-                    },
-                    {
-                        "about": {"id": 2, "time": {"id": -2}, "value": "b"},
-                        "id": 1001,
-                        "minutia": 4,
-                        "ref": 100,
-                    },
-                    {
-                        "about": {"id": 3, "value": "c"},
-                        "id": 1002,
-                        "minutia": 5.1,
-                        "ref": 100,
-                    },
-                ],
-                "ref": 10,
-            }],
+                        {
+                            "about": {"id": 2, "time": {"id": -2}, "value": "b"},
+                            "id": 1001,
+                            "minutia": 4,
+                            "ref": 100,
+                        },
+                        {
+                            "about": {"id": 3, "value": "c"},
+                            "id": 1002,
+                            "minutia": 5.1,
+                            "ref": 100,
+                        },
+                    ],
+                    "ref": 10,
+                }
+            ],
         }
     ],
     "inline": [
         {
-            "fact_table": {
-                "about": {"id": 1, "value": "a"},
-                "id": 10,
-                "name": "A",
-                "nested1": {
+            "about": {"id": 1, "value": "a"},
+            "id": 10,
+            "name": "A",
+            "nested1": [
+                {
                     "about": {"id": -1, "value": 0},
                     "ref": 10,
                     "description": "aaa",
@@ -287,14 +273,14 @@ expected_results = {
                         },
                     ],
                     "id": 100,
-                },
-            }
+                }
+            ],
         }
     ],
     "lean_inline_all": [
         {
-            "fact_table": {
-                "nested1": {
+            "nested1": [
+                {
                     "about": 0,
                     "description": "aaa",
                     "nested2": [
@@ -302,78 +288,58 @@ expected_results = {
                         {"about": "b", "minutia": 4},
                         {"about": "c", "minutia": 5.1},
                     ],
-                },
-                "about": "a",
-                "id": 10,
-                "name": "A",
-            }
+                }
+            ],
+            "about": "a",
+            "id": 10,
+            "name": "A",
         },
         {
-            "fact_table": {
-                "nested1": {
-                    "description": "bbb",
-                    "nested2": {"about": "a", "minutia": 6.2},
-                },
-                "about": "b",
-                "id": 11,
-                "name": "B",
-            }
+            "nested1": [
+                {"description": "bbb", "nested2": [{"about": "a", "minutia": 6.2}]}
+            ],
+            "about": "b",
+            "id": 11,
+            "name": "B",
         },
         {
-            "fact_table": {
-                "nested1": {
-                    "description": "ccc",
-                    "nested2": {"about": "c", "minutia": 7.3},
-                },
-                "about": "c",
-                "id": 12,
-                "name": "C",
-            }
+            "nested1": [
+                {"description": "ccc", "nested2": [{"about": "c", "minutia": 7.3}]}
+            ],
+            "about": "c",
+            "id": 12,
+            "name": "C",
+        },
+        {"nested1": [{"about": 0, "description": "ddd"}], "id": 13, "name": "D",},
+        {
+            "nested1": [
+                {"about": 0, "description": "eee"},
+                {"about": 0, "description": "fff"},
+            ],
+            "about": "a",
+            "id": 15,
+            "name": "E",
         },
         {
-            "fact_table": {
-                "nested1": {"about": 0, "description": "ddd"},
-                "id": 13,
-                "name": "D",
-            }
+            "nested1": [{"description": "ggg"}, {"description": "hhh"}],
+            "about": "b",
+            "id": 16,
+            "name": "F",
         },
         {
-            "fact_table": {
-                "nested1": [
-                    {"about": 0, "description": "eee"},
-                    {"about": 0, "description": "fff"},
-                ],
-                "about": "a",
-                "id": 15,
-                "name": "E",
-            }
+            "nested1": [{"description": "iii"}, {"description": "jjj"}],
+            "about": "c",
+            "id": 17,
+            "name": "G",
         },
         {
-            "fact_table": {
-                "nested1": [{"description": "ggg"}, {"description": "hhh"}],
-                "about": "b",
-                "id": 16,
-                "name": "F",
-            }
+            "nested1": [{"description": "kkk"}, {"description": "lll"}],
+            "id": 18,
+            "name": "H",
         },
-        {
-            "fact_table": {
-                "nested1": [{"description": "iii"}, {"description": "jjj"}],
-                "about": "c",
-                "id": 17,
-                "name": "G",
-            }
-        },
-        {
-            "fact_table": {
-                "nested1": [{"description": "kkk"}, {"description": "lll"}],
-                "id": 18,
-                "name": "H",
-            }
-        },
-        {"fact_table": {"about": "a", "id": 19, "name": "I"}},
-        {"fact_table": {"about": "b", "id": 20, "name": "J"}},
-        {"fact_table": {"about": "c", "id": 21, "name": "K"}},
-        {"fact_table": {"id": 22, "name": "L"}},
+        {"about": "a", "id": 19, "name": "I"},
+        {"about": "b", "id": 20, "name": "J"},
+        {"about": "c", "id": 21, "name": "K"},
+        {"id": 22, "name": "L"},
     ],
 }
