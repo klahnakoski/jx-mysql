@@ -910,13 +910,22 @@ class MySqlSnowflakeExtractor(object):
                     children = [curr_doc]
                     steps = list(reversed(nested_path))
                     parent_path = steps[0]
-                    for path in steps[1:]:
-                        parent = children[-1]
-                        relative_path = relative_field(path, parent_path)
-                        children = unwrap(parent[relative_path])
-                        if not children:
-                            children = parent[relative_path] = []
-                        parent_path = path
+                    try:
+                        for path in steps[1:]:
+                            parent = children[-1]
+                            relative_path = relative_field(path, parent_path)
+                            children = unwrap(parent[relative_path])
+                            if not children:
+                                children = parent[relative_path] = []
+                            parent_path = path
+                    except Exception as e:
+                        Log.error(
+                            "Document construction error: {{steps}}\n{{curr_doc}}\n{{next_object}}",
+                            steps=steps,
+                            curr_doc=curr_doc,
+                            next_object=next_object,
+                            cause=e
+                        )
 
                     children.append(next_object)
                     continue
