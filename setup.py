@@ -14,6 +14,6 @@ setup(
     long_description_content_type='text/markdown',
     name='jx-mysql',
     packages=["jx_mysql"],
-    url='https://github.com/klahnakoski/jx-bigquery',
-    version='3.67.20113'
+    url='https://github.com/klahnakoski/jx-mysql',
+    version='3.68.20116'
 )

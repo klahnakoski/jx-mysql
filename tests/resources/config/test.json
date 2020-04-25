@@ -2,7 +2,7 @@
 
 	"database": {
 		"host": "localhost",
-		"debug": true,
+		"debug": false,
 		"schema": "testing",
 		"$ref": "~/private.json#test_database"
 	},

@@ -17,6 +17,7 @@ CREATE TABLE inner1 (
 INSERT INTO inner1 VALUES (1, 'a', -1);
 INSERT INTO inner1 VALUES (2, 'b', -2);
 INSERT INTO inner1 VALUES (3, 'c', NULL);
+INSERT INTO inner1 VALUES (4, 'd', NULL);
 
 CREATE TABLE fact_table (
 	id    INT NOT NULL PRIMARY KEY,
@@ -37,6 +38,7 @@ INSERT INTO fact_table VALUES (20, 'J', 2);
 INSERT INTO fact_table VALUES (21, 'K', 3);
 INSERT INTO fact_table VALUES (22, 'L', NULL);
 INSERT INTO fact_table VALUES (30, NULL, NULL);
+INSERT INTO fact_table VALUES (40, 'N', 4);
 
 
 CREATE TABLE nested1 (
