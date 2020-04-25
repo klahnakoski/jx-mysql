@@ -17,6 +17,7 @@ CREATE TABLE inner1 (
 INSERT INTO inner1 VALUES (1, 'a', -1);
 INSERT INTO inner1 VALUES (2, 'b', -2);
 INSERT INTO inner1 VALUES (3, 'c', NULL);
+INSERT INTO inner1 VALUES (4, 'd', NULL);
 
 CREATE TABLE fact_table (
 	id    INT NOT NULL PRIMARY KEY,
@@ -37,6 +38,7 @@ INSERT INTO fact_table VALUES (20, 'J', 2);
 INSERT INTO fact_table VALUES (21, 'K', 3);
 INSERT INTO fact_table VALUES (22, 'L', NULL);
 INSERT INTO fact_table VALUES (30, NULL, NULL);
+INSERT INTO fact_table VALUES (40, 'N', 4);
 
 
 CREATE TABLE nested1 (
@@ -77,5 +79,41 @@ insert into nested2 VALUES (1002, 100, 5.1, 3);
 insert into nested2 VALUES (1003, 101, 6.2, 1);
 insert into nested2 VALUES (1004, 102, 7.3, 3);
 insert into nested2 VALUES (1030, 130, 8.4, 3);
+
+
+CREATE TABLE z_facts (
+    id    INT NOT NULL PRIMARY KEY,
+    name VARCHAR(20)
+);
+INSERT INTO z_facts VALUES (8, 'A');
+INSERT INTO z_facts VALUES (9, 'B');
+
+CREATE TABLE z_inner (
+    id          INT NOT NULL PRIMARY KEY,
+    more        INT,
+    FOREIGN KEY (more) REFERENCES z_facts (id)
+);
+insert into z_inner VALUES (18, 9);
+insert into z_inner VALUES (19, 9);
+
+CREATE TABLE z_nested
+(
+    id   INT NOT NULL PRIMARY KEY,
+    ref  INT,
+    details INT,
+    FOREIGN KEY (ref) REFERENCES z_facts (id),
+    FOREIGN KEY (details) REFERENCES z_inner (id)
+);
+INSERT INTO z_nested VALUES (108, 8, 18);
+INSERT INTO z_nested VALUES (109, 8, 19);
+
+
+
+
+
+
+
+
+
 
 commit;
