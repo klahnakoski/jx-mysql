@@ -514,7 +514,7 @@ class MySqlSnowflakeExtractor(object):
 
                         if (
                             col.is_id
-                            # and len(nested_path) == 1
+                            and len(nested_path) == 1
                             and col.table.name == fact_table.name
                             and col.table.schema == fact_table.schema
                         ):

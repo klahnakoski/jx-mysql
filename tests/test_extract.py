@@ -316,64 +316,6 @@ class TestExtract(FuzzyTestCase):
             ],
         )
 
-    def test_loop(self):
-        self.run_compare(
-            set_default(
-                {
-                    "fact_table": "z_facts",
-                    "name_relations": {
-                        "fact_table2.id <- nested21.more": "details",
-                    },
-                },
-                config_template
-            ),
-            "SELECT 9 AS id",
-            [
-                {
-                    "about": {"id": 1, "time": {"id": -1, "value": 0}, "value": "a"},
-                    "id": 10,
-                    "name": "A",
-                    "nested1": [
-                        {
-                            "about": {"id": -1, "value": 0},
-                            "description": "aaa",
-                            "id": 100,
-                            "nested2": [
-                                {
-                                    "about": {
-                                        "id": 1,
-                                        "time": {"id": -1, "value": 0},
-                                        "value": "a",
-                                    },
-                                    "id": 1000,
-                                    "minutia": 3.1415926539,
-                                    "ref": 100,
-                                },
-                                {
-                                    "about": {
-                                        "id": 2,
-                                        "time": {"id": -2},
-                                        "value": "b",
-                                    },
-                                    "id": 1001,
-                                    "minutia": 4,
-                                    "ref": 100,
-                                },
-                                {
-                                    "about": {"id": 3, "value": "c"},
-                                    "id": 1002,
-                                    "minutia": 5.1,
-                                    "ref": 100,
-                                },
-                            ],
-                            "ref": 10,
-                        }
-                    ],
-                }
-            ],
-        )
-
-
 
 filename = "tests/output/test_output.json"
 

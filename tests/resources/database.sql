@@ -80,40 +80,4 @@ insert into nested2 VALUES (1003, 101, 6.2, 1);
 insert into nested2 VALUES (1004, 102, 7.3, 3);
 insert into nested2 VALUES (1030, 130, 8.4, 3);
 
-
-CREATE TABLE z_facts (
-    id    INT NOT NULL PRIMARY KEY,
-    name VARCHAR(20)
-);
-INSERT INTO z_facts VALUES (8, 'A');
-INSERT INTO z_facts VALUES (9, 'B');
-
-CREATE TABLE z_inner (
-    id          INT NOT NULL PRIMARY KEY,
-    more        INT,
-    FOREIGN KEY (more) REFERENCES z_facts (id)
-);
-insert into z_inner VALUES (18, 9);
-insert into z_inner VALUES (19, 9);
-
-CREATE TABLE z_nested
-(
-    id   INT NOT NULL PRIMARY KEY,
-    ref  INT,
-    details INT,
-    FOREIGN KEY (ref) REFERENCES z_facts (id),
-    FOREIGN KEY (details) REFERENCES z_inner (id)
-);
-INSERT INTO z_nested VALUES (108, 8, 18);
-INSERT INTO z_nested VALUES (109, 8, 19);
-
-
-
-
-
-
-
-
-
-
 commit;
