@@ -12,8 +12,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+from jx_mysql import mysql_snowflake_extractor
 from mo_dots import set_default, wrap
-from mo_json import json2value, value2json
 from mo_logs import Log, startup, constants
 from mo_sql import SQL
 from mo_times.timer import Timer
@@ -45,6 +45,9 @@ class TestExtract(FuzzyTestCase):
 
     def setUp(self):
         pass
+
+    def verify_debug_is_off(self):
+        self.assertEqual(mysql_snowflake_extractor.DEBUG, False)
 
     def run_compare(self, config, id_sql, expected):
         db = MySQL(**config.database)
