@@ -8,12 +8,12 @@ setup(
     classifiers=["Development Status :: 4 - Beta","Topic :: Software Development :: Libraries","Topic :: Software Development :: Libraries :: Python Modules","License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)","Programming Language :: Python :: 2.7","Programming Language :: Python :: 3.6","Programming Language :: Python :: 3.7","Programming Language :: Python :: 3.8"],
     description='jx-mysql - JSON Expressions for MySQL',
     include_package_data=True,
-    install_requires=["jx-python>=3.78.20194","mo-collections>=3.77.20190","mo-dots>=3.78.20194","mo-files>=3.80.20196","mo-future>=3.71.20168","mo-http>=3.77.20190","mo-json>=3.80.20196","mo-kwargs>=3.77.20190","mo-logs>=3.78.20194","mo-math>=3.77.20190","mo-sql>=3.77.20190","mo-times>=3.76.20190","pyLibrary>=3.47.20042","pymysql"],
+    install_requires=["jx-python>=3.78.20194","mo-collections>=3.77.20190","mo-dots>=3.85.20198","mo-files>=3.85.20198","mo-future>=3.71.20168","mo-http>=3.77.20190","mo-json>=3.80.20196","mo-kwargs>=3.82.20197","mo-logs>=3.85.20198","mo-math>=3.77.20190","mo-sql>=3.77.20190","mo-times>=3.76.20190","pyLibrary>=3.47.20042","pymysql"],
     license='MPL 2.0',
     long_description='# jx-mysql\n\nJSON query expressions for MySQL, plus [the snowflake extractor](docs/snowflake_extractor.md)\n',
     long_description_content_type='text/markdown',
     name='jx-mysql',
     packages=["jx_mysql"],
     url='https://github.com/klahnakoski/jx-mysql',
-    version='3.80.20196'
+    version='3.85.20198'
 )
