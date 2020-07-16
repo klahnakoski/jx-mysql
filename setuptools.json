@@ -15,10 +15,10 @@
     "include_package_data": true,
     "install_requires": [
              "jx-python>=3.78.20194", "mo-collections>=3.77.20190",
-               "mo-dots>=3.78.20194",       "mo-files>=3.80.20196",
+               "mo-dots>=3.85.20198",       "mo-files>=3.85.20198",
              "mo-future>=3.71.20168",        "mo-http>=3.77.20190",
-               "mo-json>=3.80.20196",      "mo-kwargs>=3.77.20190",
-               "mo-logs>=3.78.20194",        "mo-math>=3.77.20190",
+               "mo-json>=3.80.20196",      "mo-kwargs>=3.82.20197",
+               "mo-logs>=3.85.20198",        "mo-math>=3.77.20190",
                 "mo-sql>=3.77.20190",       "mo-times>=3.76.20190",
              "pyLibrary>=3.47.20042",                    "pymysql"
     ],
@@ -36,5 +36,5 @@
     "name": "jx-mysql",
     "packages": ["jx_mysql"],
     "url": "https://github.com/klahnakoski/jx-mysql",
-    "version": "3.80.20196"
+    "version": "3.85.20198"
 }
