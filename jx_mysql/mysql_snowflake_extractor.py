@@ -14,7 +14,7 @@ from __future__ import unicode_literals
 
 from copy import deepcopy, copy
 
-from jx_mysql.mysql import MySQL, quote_column, sql_alias
+from jx_mysql.mysql import MySql, quote_column, sql_alias
 from jx_python import jx
 from mo_collections import UniqueIndex
 from mo_dots import (
@@ -37,7 +37,7 @@ from mo_future import text, sort_using_key, first
 from mo_kwargs import override
 from mo_logs import Log, strings
 from mo_logs.exceptions import Explanation
-from mo_math.randoms import Random
+from mo_math import randoms as Random
 from mo_sql import (
     SQL_SELECT,
     sql_list,
@@ -85,7 +85,7 @@ class MySqlSnowflakeExtractor(object):
         self.columns = None
 
         with Explanation("scan database", debug=DEBUG):
-            self.db = MySQL(**kwargs.database)
+            self.db = MySql(**kwargs.database)
             self.settings.database.schema = self.db.settings.schema
             with self.db.transaction():
                 self._scan_database()
@@ -894,7 +894,7 @@ class MySqlSnowflakeExtractor(object):
         doc_count = 0
 
         columns = tuple(wrap(c) for c in self.columns)
-        with Timer("Downloading from MySQL", verbose=DEBUG):
+        with Timer("Downloading from MySql", verbose=DEBUG):
             curr_doc = Null
             row_count = 0
             if DEBUG:

@@ -11,7 +11,7 @@
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8"
     ],
-    "description": "jx-mysql - JSON Expressions for MySQL",
+    "description": "jx-mysql - JSON Expressions for MySql",
     "include_package_data": true,
     "install_requires": [
              "jx-python>=3.78.20194", "mo-collections>=3.77.20190",
@@ -27,7 +27,7 @@
         "$concat": [
             "# jx-mysql",
             "",
-            "JSON query expressions for MySQL, plus [the snowflake extractor](docs/snowflake_extractor.md)",
+            "JSON query expressions for MySql, plus [the snowflake extractor](docs/snowflake_extractor.md)",
             ""
         ],
         "separator": "\n"

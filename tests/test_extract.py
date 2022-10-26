@@ -18,7 +18,7 @@ from mo_logs import Log, startup, constants
 from mo_sql import SQL
 from mo_times.timer import Timer
 
-from jx_mysql.mysql import MySQL, execute_file
+from jx_mysql.mysql import MySql, execute_file
 from jx_mysql.mysql_snowflake_extractor import MySqlSnowflakeExtractor
 from mo_testing.fuzzytestcase import FuzzyTestCase
 
@@ -32,7 +32,7 @@ class TestExtract(FuzzyTestCase):
         Log.start(settings.debug)
         with Timer("setup database"):
             try:
-                with MySQL(schema=None, kwargs=settings.database) as db:
+                with MySql(schema=None, kwargs=settings.database) as db:
                     db.query("drop database testing")
             except Exception as e:
                 if "Can't drop database " in e:
@@ -50,7 +50,7 @@ class TestExtract(FuzzyTestCase):
         self.assertEqual(mysql_snowflake_extractor.DEBUG, False)
 
     def run_compare(self, config, id_sql, expected):
-        db = MySQL(**config.database)
+        db = MySql(**config.database)
         extractor = MySqlSnowflakeExtractor(kwargs=config)
 
         sql = extractor.get_sql(SQL(id_sql))

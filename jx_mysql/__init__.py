@@ -26,9 +26,9 @@ from mo_logs.strings import expand_template
 from mo_sql import SQL, SQL_ORDERBY, SQL_LIMIT, sql_list, SQL_WHERE
 
 
-class MySQL_forBugzilla(object):
+class MySql_forBugzilla(object):
     """
-    jx to MySQL DATABASE QUERIES
+    jx to MySql DATABASE QUERIES
 
     NEW CODE SHOULD NOT USE THIS: SUBSUMED BY THE REST OF THE LIBRARY
     """
@@ -46,10 +46,10 @@ class MySQL_forBugzilla(object):
         readonly=False,
         kwargs=None
     ):
-        from jx_mysql.mysql import MySQL
+        from jx_mysql.mysql import MySql
 
         self.settings = kwargs
-        self._db = MySQL(kwargs)
+        self._db = MySql(kwargs)
 
     def __data__(self):
         settings = self.settings.copy()
@@ -368,6 +368,6 @@ aggregates = {
     "variance": "POWER(STDDEV({{code}}), 2)"
 }
 
-from jx_base.container import type2container
+from jx_base.models.container import type2container
 
-type2container["mysql"] = MySQL_forBugzilla
+type2container["mysql"] = MySql_forBugzilla

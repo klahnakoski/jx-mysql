@@ -1,4 +1,4 @@
-# MySQL Snowflake Extractor
+# MySql Snowflake Extractor
 
 Connects to a database, explores the relations, and extracts the fact table as JSON documents
 
