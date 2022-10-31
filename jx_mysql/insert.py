@@ -14,9 +14,22 @@ from __future__ import absolute_import, division, unicode_literals
 from typing import Dict, List
 
 import jx_base
-from mo_dots import startswith_field, from_data
-
+from jx_base import Column, generateGuid
+from jx_base.models.nested_path import NestedPath
+from jx_mysql.expressions._utils import json_type_to_sql_type_key
 from jx_mysql.mysql import *
+from jx_mysql.utils import (
+    GUID,
+    ORDER,
+    PARENT,
+    UID,
+    typed_column,
+    untyped_column, )
+from mo_dots import (
+    startswith_field,
+    from_data,
+    relative_field,
+)
 
 
 class Facts(jx_base.Facts):
@@ -43,9 +56,9 @@ class Facts(jx_base.Facts):
         doc_collection: Dict[str, Insertion] = {".": facts_insertion}
         # KEEP TRACK OF WHAT TABLE WILL BE MADE (SHORTLY)
         required_changes = []
-        snowflake = self.container.get_or_create_facts(self.name).snowflake
+        snowflake = self.container.get_or_create_table(self.name).schema.snowflake
 
-        def _flatten(doc, doc_path, nested_path, row, row_num, row_id, parent_id):
+        def _flatten(doc, doc_path, nested_path: NestedPath, row, row_num, row_id, parent_id):
             """
             :param doc: the data we are pulling apart
             :param doc_path: path to this (sub)doc
@@ -56,8 +69,8 @@ class Facts(jx_base.Facts):
             :param parent_id: the parent id of this (sub)doc
             :return:
             """
-            curr_query_path = nested_path[0]
-            table_name = concat_field(self.name, curr_query_path)
+            table_name = nested_path[0]
+            curr_query_path = relative_field(table_name, self.name)
             insertion = doc_collection.setdefault(curr_query_path, Insertion())
 
             if is_data(doc):
@@ -68,30 +81,29 @@ class Facts(jx_base.Facts):
 
             for rel_name, v in items:
                 abs_name = concat_field(doc_path, rel_name)
-                jx_type = value_to_jx_type(v)
-                if jx_type is None:
+                json_type = value_to_json_type(v)
+                es_type = json_type_to_mysql_type(json_type, v)
+                if json_type is None:
                     continue
-
                 columns = (
                     snowflake.get_schema(nested_path).columns + insertion.active_columns
                 )
-                if jx_type == ARRAY:
+                if json_type == ARRAY:
                     curr_column = first(
                         cc
                         for cc in columns
-                        if cc.jx_type in STRUCT
+                        if cc.json_type in STRUCT
                         and untyped_column(cc.name)[0] == abs_name
                     )
                     if curr_column:
                         deeper_insertion = doc_collection.setdefault(
                             curr_column.es_column, Insertion()
                         )
-
                 else:
                     curr_column = first(
                         cc
                         for cc in columns
-                        if cc.jx_type == jx_type and cc.name == abs_name
+                        if cc.json_type == json_type and cc.name == abs_name
                     )
 
                 if not curr_column:
@@ -103,13 +115,13 @@ class Facts(jx_base.Facts):
                         ) < len(path):
                             deeper_nested_path = path
 
-                    curr_column = jx_base.Column(
+                    curr_column = Column(
                         name=abs_name,
-                        json_type=jx_type,
-                        es_type=json_type_to_mysql_type.get(jx_type, jx_type),
+                        json_type=json_type,
+                        es_type=es_type,
                         es_column=typed_column(
-                            concat_field(nested_path[0], rel_name),
-                            json_type_to_sql_type_key.get(jx_type),
+                            abs_name,
+                            json_type_to_sql_type_key.get(json_type),
                         ),
                         es_index=table_name,
                         cardinality=0,
@@ -117,7 +129,7 @@ class Facts(jx_base.Facts):
                         nested_path=nested_path,
                         last_updated=Date.now(),
                     )
-                    if jx_type == ARRAY:
+                    if json_type == ARRAY:
                         # NOTE: ADVANCE active_columns TO THIS NESTED LEVEL
                         # SCHEMA (AND DATABASE) WILL BE UPDATED LATER
                         deeper_insertion = doc_collection.setdefault(
@@ -137,20 +149,21 @@ class Facts(jx_base.Facts):
                         required_changes.append({"add": curr_column})
 
                     insertion.active_columns.append(curr_column)
-
-                elif curr_column.jx_type == ARRAY and jx_type == OBJECT:
+                elif json_type == STRING and get_es_type_length(curr_column.es_type) < get_es_type_length(es_type):
+                    required_changes.append({"alter": curr_column, "es_type": es_type})
+                elif curr_column.json_type == ARRAY and json_type == OBJECT:
                     # ALWAYS PROMOTE OBJECTS TO NESTED
-                    jx_type = ARRAY
+                    json_type = ARRAY
                     v = [v]
                 elif len(curr_column.nested_path) < len(nested_path):
                     es_column = curr_column.es_column
                     # # required_changes.append({"nest": c})
                     # deeper_column = Column(
                     #     name=abs_name,
-                    #     json_typejx_type,
-                    #     es_type=json_type_to_mysql_type.get(jx_type, jx_type),
+                    #     json_type=json_type,
+                    #     es_type=es_type
                     #     es_column=typed_column(
-                    #         abs_name, json_type_to_sql_type_key.get(jx_type)
+                    #         abs_name, json_type_to_sql_type_key.get(json_type)
                     #     ),
                     #     es_index=table_name,
                     #     nested_path=nested_path,
@@ -166,7 +179,7 @@ class Facts(jx_base.Facts):
                         if es_column in r:
                             deeper_es_column = typed_column(
                                 concat_field(nested_path[0], rel_name),
-                                json_type_to_sql_type_key.get(jx_type),
+                                json_type_to_sql_type_key.get(json_type),
                             )
 
                             row1 = {
@@ -186,7 +199,7 @@ class Facts(jx_base.Facts):
                     insertion.rows.append(row)
 
                 # BE SURE TO NEST VALUES, IF NEEDED
-                if jx_type == ARRAY:
+                if json_type == ARRAY:
                     for child_row_num, child_data in enumerate(v):
                         child_uid = self.container.next_uid()
                         child_row = {
@@ -199,13 +212,13 @@ class Facts(jx_base.Facts):
                         _flatten(
                             doc=child_data,
                             doc_path=abs_name,
-                            nested_path=[curr_column.es_column] + nested_path,
+                            nested_path=[concat_field(self.name, curr_column.es_column)] + nested_path,
                             row=child_row,
                             row_num=child_row_num,
                             row_id=child_uid,
                             parent_id=row_id,
                         )
-                elif jx_type == OBJECT:
+                elif json_type == OBJECT:
                     _flatten(
                         doc=v,
                         doc_path=abs_name,
@@ -215,17 +228,17 @@ class Facts(jx_base.Facts):
                         row_id=row_id,
                         parent_id=parent_id,
                     )
-                elif curr_column.jx_type:
+                elif curr_column.json_type:
                     row[curr_column.es_column] = v
 
         for doc in docs:
             uid = self.container.next_uid()
-            row = {GUID: jx_base.generateGuid(), UID: uid}
+            row = {GUID: generateGuid(), UID: uid}
             facts_insertion.rows.append(row)
             _flatten(
                 doc=doc,
                 doc_path=".",
-                nested_path=["."],
+                nested_path=[self.name],
                 row=row,
                 row_num=0,
                 row_id=uid,
@@ -240,7 +253,7 @@ class Facts(jx_base.Facts):
     def _insert(self, collection):
         for nested_path, insertion in collection.items():
             column_names = [
-                c.es_column for c in insertion.active_columns if c.jx_type != ARRAY
+                c.es_column for c in insertion.active_columns if c.json_type != ARRAY
             ]
             rows = insertion.rows
             table_name = concat_field(self.name, nested_path)

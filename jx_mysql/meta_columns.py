@@ -10,8 +10,7 @@
 from __future__ import absolute_import, division, unicode_literals
 
 from copy import copy
-
-from jx_base.models.schema import Schema
+from typing import List
 
 import jx_base
 from jx_base import Table, Container, Column
@@ -20,10 +19,12 @@ from jx_base.meta_columns import (
     META_COLUMNS_NAME,
     SIMPLE_METADATA_COLUMNS,
 )
-from jx_python import jx
+from jx_base.models.nested_path import NestedPath
+from jx_base.models.schema import Schema
 from jx_mysql.expressions._utils import sql_type_key_to_json_type
 from jx_mysql.mysql import sql_query, mysql_type_to_json_type
 from jx_mysql.utils import untyped_column
+from jx_python import jx
 from mo_dots import (
     Data,
     Null,
@@ -31,10 +32,9 @@ from mo_dots import (
     is_data,
     is_list,
     startswith_field,
-    tail_field,
     unwraplist,
     wrap,
-    list_to_data,
+    list_to_data, to_data,
 )
 from mo_json import STRUCT, IS_NULL
 from mo_json.typed_encoder import unnest_path, untyped
@@ -75,6 +75,8 @@ class ColumnList(Table, Container):
         self.last_load = Null
         self.todo = Queue("update columns to es")  # HOLD (action, column) PAIR, WHERE action in ['insert', 'update']
         self._snowflakes = {}
+        self.tables = set()
+        self.primary_keys = {}
         self._load_from_database()
 
     def _query(self, query):
@@ -92,68 +94,77 @@ class ColumnList(Table, Container):
             "where": {"eq":{"table_schema":self.db.schema}},
             "orderby": "table_name",
         }))
-        last_nested_path = ["."]
-        for table in tables:
-            if table.name.startswith("__"):
+        last_nested_path = []
+        for table in list(tables):
+            table_name = table.TABLE_NAME
+            if table_name.startswith("__"):
                 continue
-            base_table, nested_path = tail_field(table.name)
 
-            # FIND COMMON ARRAY PATH SUFFIX
-            if nested_path == ".":
-                last_nested_path = []
+            # ASSUME TABLES WITH SAME PREFIX FORM A SNOWFLAKE
+            for i, p in enumerate(last_nested_path):
+                if startswith_field(table_name, p):
+                    last_nested_path = last_nested_path[i:]
+                    break
             else:
-                for i, p in enumerate(last_nested_path):
-                    if startswith_field(nested_path, p):
-                        last_nested_path = last_nested_path[i:]
-                        break
-                else:
-                    last_nested_path = []
+                last_nested_path = []
 
-            full_nested_path = [nested_path] + last_nested_path
-            self._snowflakes.setdefault(base_table, []).append(full_nested_path)
+            full_nested_path = [table_name] + last_nested_path
+            self._snowflakes.setdefault(full_nested_path[-1], []).append(full_nested_path)
 
             # LOAD THE COLUMNS
-            details = self.db.about(table.TABLE_NAME)
+            details = self.db.about(table_name)
 
             for d in details:
                 name = d.Field
-                if name.startswith("__"):
-                    continue
+                dtype= d.Type
+                pk = d.Key
                 cname, ctype = untyped_column(name)
+
+                if pk:
+                    (to_data(self.primary_keys)[table.name]+[])[pk] = name
+
                 self.add(Column(
                     name=cname,
                     json_type=coalesce(
                         sql_type_key_to_json_type.get(ctype),
-                        mysql_type_to_json_type(d.Type),
+                        mysql_type_to_json_type(dtype),
                         IS_NULL,
                     ),
                     nested_path=full_nested_path,
-                    es_type=d.Type,
+                    es_type=dtype,
                     es_column=name,
-                    es_index=table.TABLE_NAME,
+                    es_index=table_name,
                     multi=1,
                     last_updated=Date.now(),
                 ))
             last_nested_path = full_nested_path
 
-    def find(self, fact_table, abs_column_name=None):
-        try:
-            with self.locker:
-                if fact_table.startswith("meta."):
-                    self._update_meta()
+    def find_columns(self, table_name):
+        with self.locker:
+            if table_name.startswith("meta."):
+                self._update_meta()
 
-                if not abs_column_name:
-                    return [
-                        cc
-                        for table, cs in self.data.items()
-                        if startswith_field(table, fact_table)
-                        for c in cs.values()
-                        for cc in c
-                    ]
-                else:
-                    return self.data.get(fact_table, {}).get(abs_column_name, [])
-        except Exception as cause:
-            Log.error("not expected", cause=cause)
+            return set(
+                col
+                for cols in self.data[table_name].values()
+                for col in cols
+            )
+
+    def find(self, fact_table, abs_column_name=None):
+        with self.locker:
+            if fact_table.startswith("meta."):
+                self._update_meta()
+
+            if not abs_column_name:
+                return [
+                    cc
+                    for table, cs in self.data.items()
+                    if startswith_field(table, fact_table)
+                    for c in cs.values()
+                    for cc in c
+                ]
+            else:
+                return self.data.get(fact_table, {}).get(abs_column_name, [])
 
     def extend(self, columns):
         self.dirty = True
@@ -400,7 +411,7 @@ class ColumnList(Table, Container):
             Log.error("this container has only the " + META_COLUMNS_NAME)
         return self._all_columns()
 
-    def get_query_paths(self, fact_name):
+    def get_query_paths(self, fact_name) -> List[NestedPath]:
         """
         RETURN LIST OF QUERY PATHS FOR GIVEN FACT
         :return:
@@ -425,12 +436,12 @@ class ColumnList(Table, Container):
                     "count": c.count,
                     "nested_path": [unnest_path(n) for n in c.nested_path],
                     "es_type": c.es_type,
-                    "type": c.jx_type,
+                    "type": c.json_type,
                 }
                 for tname, css in self.data.items()
                 for cname, cs in css.items()
                 for c in cs
-                if c.jx_type not in STRUCT  # and c.es_column != "_id"
+                if c.json_type not in STRUCT  # and c.es_column != "_id"
             ]
 
         from jx_python.containers.list import ListContainer

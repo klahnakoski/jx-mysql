@@ -14,50 +14,18 @@ from __future__ import unicode_literals
 
 from copy import deepcopy, copy
 
-from jx_mysql.mysql import MySql, quote_column, sql_alias
-from jx_python import jx
+from jx_mysql.mysql import *
 from mo_collections import UniqueIndex
 from mo_dots import (
-    coalesce,
-    Data,
-    wrap,
-    Null,
-    FlatList,
-    unwrap,
     join_field,
-    split_field,
     relative_field,
-    concat_field,
     literal_field,
     set_default,
     startswith_field,
-    listwrap,
 )
-from mo_future import text, sort_using_key, first
-from mo_kwargs import override
-from mo_logs import Log, strings
+from mo_future import sort_using_key
 from mo_logs.exceptions import Explanation
-from mo_math import randoms as Random
-from mo_sql import (
-    SQL_SELECT,
-    sql_list,
-    SQL_NULL,
-    sql_iso,
-    SQL_FROM,
-    SQL_INNER_JOIN,
-    SQL_LEFT_JOIN,
-    SQL_ON,
-    SQL_UNION_ALL,
-    SQL_ORDERBY,
-    SQL_STAR,
-    SQL_IS_NOT_NULL,
-    SQL,
-    SQL_AND,
-    SQL_EQ,
-    ConcatSQL,
-    SQL_LIMIT,
-    SQL_ONE,
-)
+from mo_math import randoms
 from mo_times import Timer
 
 DEBUG = False
@@ -152,7 +120,7 @@ class MySqlSnowflakeExtractor(object):
             WHERE
                 referenced_column_name IS NOT NULL
             """,
-            param=self.settings.database,
+            format="list",
         )
 
         if not raw_relations:
@@ -182,7 +150,7 @@ class MySqlSnowflakeExtractor(object):
                     Log.note("Relation {{relation}} already exists", relation=r)
                     continue
 
-                to_add.constraint_name = Random.hex(20)
+                to_add.constraint_name = randoms.hex(20)
                 raw_relations.append(to_add)
             except Exception as e:
                 Log.error("Could not parse {{line|quote}}", line=r, cause=e)
@@ -422,7 +390,7 @@ class MySqlSnowflakeExtractor(object):
                         SQL_FROM,
                         quote_column(position.schema, position.name),
                         SQL_LIMIT,
-                        SQL_ONE,
+                        SQL_ZERO,
                     )
                 )
 
@@ -893,7 +861,7 @@ class MySqlSnowflakeExtractor(object):
 
         doc_count = 0
 
-        columns = tuple(wrap(c) for c in self.columns)
+        columns = tuple(to_data(c) for c in self.columns)
         with Timer("Downloading from MySql", verbose=DEBUG):
             curr_doc = Null
             row_count = 0

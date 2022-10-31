@@ -7,16 +7,20 @@
 #
 
 
-
 import subprocess
-from math import isnan
 from urllib.parse import unquote
 
 from pymysql import connect, cursors
 
-from jx_base import jx_expression
+from jx_mysql.utils import round_up_pow2
 from jx_python import jx
-from mo_dots import coalesce, listwrap, unwrap, wrap, is_sequence, join_field, from_data
+from mo_dots import (
+    coalesce,
+    listwrap,
+    unwrap,
+    wrap,
+    list_to_data, dict_to_data,
+)
 from mo_files import File, URL
 from mo_future import transpose, utf8_json_encoder
 from mo_http import http
@@ -30,9 +34,11 @@ from mo_times import Date, DAY
 from pyLibrary import convert
 from pyLibrary.meta import cache
 
-DEBUG = False
+DEBUG = True
 MAX_BATCH_SIZE = 1
-EXECUTE_TIMEOUT = 5 * 600 * 1000  # in milliseconds  SET TO ZERO (OR None) FOR HOST DEFAULT TIMEOUT
+EXECUTE_TIMEOUT = (
+    5 * 600 * 1000
+)  # in milliseconds  SET TO ZERO (OR None) FOR HOST DEFAULT TIMEOUT
 
 MYSQL_EXECUTABLE = "mysql"
 
@@ -52,12 +58,12 @@ class MySql(object):
         username=None,
         password=None,
         port=3306,
-        debug=False,
+        debug=DEBUG,
         schema=None,
         db=None,  # ALIAS FOR schema
         preamble=None,
         readonly=False,
-        kwargs=None
+        kwargs=None,
     ):
         """
         OVERRIDE THE settings.schema WITH THE schema PARAMETER
@@ -83,7 +89,7 @@ class MySql(object):
             self.preamble = indent(preamble, "# ").strip() + "\n"
 
         self.readonly = readonly
-        self.debug = coalesce(debug, DEBUG)
+        self.debug = debug or DEBUG
         if host:
             self._open()
 
@@ -106,7 +112,7 @@ class MySql(object):
                 self.settings.host = hp
 
         # SSL PEM
-        if self.settings.host in ("localhost", "mysql", '127.0.0.1'):
+        if self.settings.host in ("localhost", "mysql", "127.0.0.1"):
             ssl_context = None
         else:
             if self.settings.ssl and not self.settings.ssl.pem:
@@ -122,22 +128,26 @@ class MySql(object):
                 port=self.settings.port,
                 user=coalesce(self.settings.username, self.settings.user),
                 passwd=coalesce(self.settings.password, self.settings.passwd),
-                read_timeout=coalesce(self.settings.read_timeout, (EXECUTE_TIMEOUT / 1000) - 10 if EXECUTE_TIMEOUT else None, 5*60),
-                charset=u"utf8",
+                read_timeout=coalesce(
+                    self.settings.read_timeout,
+                    (EXECUTE_TIMEOUT / 1000) - 10 if EXECUTE_TIMEOUT else None,
+                    5 * 60,
+                ),
+                charset="utf8",
                 use_unicode=True,
                 ssl=ssl_context,
-                cursorclass=cursors.SSCursor
+                cursorclass=cursors.SSCursor,
             )
         except Exception as e:
             if "://" not in self.settings.host:
                 Log.error(
-                    u"Failure to connect to {{host}}:{{port}}",
+                    "Failure to connect to {{host}}:{{port}}",
                     host=self.settings.host,
                     port=self.settings.port,
-                    cause=e
+                    cause=e,
                 )
             else:
-                Log.error(u"Failure to connect.  PROTOCOL PREFIX IS PROBABLY BAD", e)
+                Log.error("Failure to connect.  PROTOCOL PREFIX IS PROBABLY BAD", e)
         self.partial_rollback = False
         self.transaction_level = 0
         self.backlog = []  # accumulate the write commands so they are sent at once
@@ -157,7 +167,7 @@ class MySql(object):
                 if self.transaction_level:
                     self.rollback()
             except Exception as e:
-                Log.warning(u"can not rollback()", cause=[value, e])
+                Log.warning("can not rollback()", cause=[value, e])
             finally:
                 self.close()
             return
@@ -165,7 +175,7 @@ class MySql(object):
         try:
             self.commit()
         except Exception as e:
-            Log.warning(u"can not commit()", e)
+            Log.warning("can not commit()", e)
         finally:
             self.close()
 
@@ -178,7 +188,7 @@ class MySql(object):
     def begin(self):
         self.transaction_level += 1
         if self.schema:
-            self.execute(str("USE"+quote_column(self.schema)))
+            self.execute(str("USE" + quote_column(self.schema)))
         self.execute("SET TIME_ZONE='+00:00'")
         if EXECUTE_TIMEOUT:
             try:
@@ -187,7 +197,9 @@ class MySql(object):
             except Exception as e:
                 e = Except.wrap(e)
                 if "Unknown system variable 'MAX_EXECUTION_TIME'" in e:
-                    globals()['EXECUTE_TIMEOUT'] = 0  # THIS VERSION OF MYSQL DOES NOT HAVE SESSION LEVEL VARIABLE
+                    globals()["EXECUTE_TIMEOUT"] = (
+                        0  # THIS VERSION OF MYSQL DOES NOT HAVE SESSION LEVEL VARIABLE
+                    )
                 else:
                     raise e
 
@@ -264,7 +276,7 @@ class MySql(object):
         except Exception as e:
             Log.error("Problem calling procedure " + proc_name, e)
 
-    def query(self, sql, param=None, stream=False, row_tuples=False):
+    def query(self, sql, param=None, stream=False, format=None):
         """
         RETURN A LIST OF dicts
 
@@ -283,35 +295,68 @@ class MySql(object):
             if param:
                 sql = expand_template(sql, quote_param(param))
             sql = self.preamble + outdent(sql)
-            self.debug and Log.note("Execute SQL:\n{{sql}}", sql=indent(sql))
+            self.debug and Log.note("Execute SQL:\n{{sql}}", sql=indent(sql), stack_depth=1)
 
-            with self.db.cursor() as cursor:
-                cursor.execute(sql)
-                if row_tuples:
-                    if stream:
-                        result = cursor
+            if not stream:
+                with self.db.cursor() as cursor:
+                    cursor.execute(sql)
+
+                    columns = tuple(
+                        utf8_to_unicode(d[0]) for d in coalesce(cursor.description, [])
+                    )
+
+                    if format == "table":
+                        return dict_to_data({"header": columns, "data": list(cursor)})
+                    elif format == "list":
+                        return [
+                            dict(zip(columns, row))
+                            for row in cursor
+                        ]
                     else:
-                        result = wrap(list(cursor))
-                else:
-                    columns = tuple(utf8_to_unicode(d[0]) for d in coalesce(cursor.description, []))
-                    def streamer():
-                        for row in cursor:
-                            output = Data()
-                            for c, v in zip(columns, row):
-                                output[c] = v
-                            yield output
+                        # original bugzilla etl (names are dot-delimited paths)
+                        return [
+                            leaves_to_data(dict(zip(columns, row)))
+                            for row in cursor
+                        ]
 
-                    if stream:
-                        result = streamer()
-                    else:
-                        result = list(streamer())
+            Log.error("not tested")
 
-                return result
+            cursor = self.db.cursor().__enter__()
+            cursor.execute(sql)
+
+            columns = tuple(
+                utf8_to_unicode(d[0]) for d in coalesce(cursor.description, [])
+            )
+
+            if format == "list":
+                # SIMPLE RETURN
+                def tuple_streamer():
+                    try:
+                        yield from cursor
+                    finally:
+                        cursor.__exit__()
+
+                return {"header": columns, "data": tuple_streamer}
+
+            def streamer():
+                try:
+                    for row in cursor:
+                        yield leaves_to_data(dict(zip(columns, row)))
+                finally:
+                    cursor.__exit__()
+
+            return streamer()
+
         except Exception as e:
             e = Except.wrap(e)
             if "InterfaceError" in e:
                 Log.error("Did you close the db connection?", e)
-            Log.error("Problem executing SQL:\n{{sql|indent}}", sql=sql, cause=e, stack_depth=1)
+            Log.error(
+                "Problem executing SQL:\n{{sql|indent}}",
+                sql=sql,
+                cause=e,
+                stack_depth=1,
+            )
 
     def column_query(self, sql, param=None):
         """
@@ -338,7 +383,12 @@ class MySql(object):
             e = Except.wrap(e)
             if "InterfaceError" in e:
                 Log.error("Did you close the db connection?", e)
-            Log.error("Problem executing SQL:\n{{sql|indent}}", sql=sql, cause=e, stack_depth=1)
+            Log.error(
+                "Problem executing SQL:\n{{sql|indent}}",
+                sql=sql,
+                cause=e,
+                stack_depth=1,
+            )
 
     # EXECUTE GIVEN METHOD FOR ALL ROWS RETURNED
     def forall(self, sql, param=None, _execute=None):
@@ -353,13 +403,20 @@ class MySql(object):
             self.debug and Log.note("Execute SQL:\n{{sql}}", sql=indent(sql))
             with self.db.cursor() as cursor:
                 cursor.execute(sql)
-                columns = tuple([utf8_to_unicode(d[0].lower()) for d in cursor.description])
+                columns = tuple([
+                    utf8_to_unicode(d[0].lower()) for d in cursor.description
+                ])
                 for r in cursor:
                     num += 1
                     _execute(wrap(dict(zip(columns, [utf8_to_unicode(c) for c in r]))))
 
         except Exception as e:
-            Log.error("Problem executing SQL:\n{{sql|indent}}", sql=sql, cause=e, stack_depth=1)
+            Log.error(
+                "Problem executing SQL:\n{{sql|indent}}",
+                sql=sql,
+                cause=e,
+                stack_depth=1,
+            )
 
         return num
 
@@ -382,11 +439,18 @@ class MySql(object):
         for i, g in jx.chunk(backlog, size=MAX_BATCH_SIZE):
             sql = self.preamble + ";\n".join(g)
             try:
-                self.debug and Log.note("Execute block of SQL:\n{{sql|indent}}", sql=sql)
+                self.debug and Log.note(
+                    "Execute block of SQL:\n{{sql|indent}}", sql=sql
+                )
                 with self.db.cursor() as cursor:
                     cursor.execute(sql)
             except Exception as e:
-                Log.error("Problem executing SQL:\n{{sql|indent}}", sql=sql, cause=e, stack_depth=1)
+                Log.error(
+                    "Problem executing SQL:\n{{sql|indent}}",
+                    sql=sql,
+                    cause=e,
+                    stack_depth=1,
+                )
 
     ## Insert dictionary of values into table
     def insert(self, table_name, record):
@@ -394,10 +458,11 @@ class MySql(object):
 
         try:
             command = (
-                SQL_INSERT + quote_column(table_name) +
-                sql_iso(sql_list([quote_column(k) for k in keys])) +
-                SQL_VALUES +
-                sql_iso(sql_list([quote_value(record[k]) for k in keys]))
+                SQL_INSERT
+                + quote_column(table_name)
+                + sql_iso(sql_list([quote_column(k) for k in keys]))
+                + SQL_VALUES
+                + sql_iso(sql_list([quote_value(record[k]) for k in keys]))
             )
             self.execute(command)
         except Exception as e:
@@ -410,19 +475,38 @@ class MySql(object):
 
         condition = sql_eq(**{k: new_record[k] for k in candidate_key})
         command = (
-            SQL_INSERT + quote_column(table_name) + sql_iso(sql_list(
-                quote_column(k) for k in new_record.keys()
-            )) +
-            SQL_SELECT + "a.*" + SQL_FROM + sql_iso(
-                SQL_SELECT + sql_list([quote_value(v) + " " + quote_column(k) for k, v in new_record.items()]) +
-                SQL_FROM + "DUAL"
-            ) + " a" +
-            SQL_LEFT_JOIN + sql_iso(
-                SQL_SELECT + "'dummy' exist " +
-                SQL_FROM + quote_column(table_name) +
-                SQL_WHERE + condition +
-                SQL_LIMIT + SQL_ONE
-            ) + " b ON " + SQL_TRUE + SQL_WHERE + " exist " + SQL_IS_NULL
+            SQL_INSERT
+            + quote_column(table_name)
+            + sql_iso(sql_list(quote_column(k) for k in new_record.keys()))
+            + SQL_SELECT
+            + "a.*"
+            + SQL_FROM
+            + sql_iso(
+                SQL_SELECT
+                + sql_list([
+                    quote_value(v) + " " + quote_column(k)
+                    for k, v in new_record.items()
+                ])
+                + SQL_FROM
+                + "DUAL"
+            )
+            + " a"
+            + SQL_LEFT_JOIN
+            + sql_iso(
+                SQL_SELECT
+                + "'dummy' exist "
+                + SQL_FROM
+                + quote_column(table_name)
+                + SQL_WHERE
+                + condition
+                + SQL_LIMIT
+                + SQL_ONE
+            )
+            + " b ON "
+            + SQL_TRUE
+            + SQL_WHERE
+            + " exist "
+            + SQL_IS_NULL
         )
         self.execute(command, {})
 
@@ -442,9 +526,11 @@ class MySql(object):
 
         try:
             command = (
-                SQL_INSERT + quote_column(table_name) +
-                sql_iso(sql_list([quote_column(k) for k in keys])) +
-                SQL_VALUES + sql_list(
+                SQL_INSERT
+                + quote_column(table_name)
+                + sql_iso(sql_list([quote_column(k) for k in keys]))
+                + SQL_VALUES
+                + sql_list(
                     sql_iso(sql_list([quote_value(r[k]) for k in keys]))
                     for r in records
                 )
@@ -464,35 +550,62 @@ class MySql(object):
         where_clause = sql_eq(**where_slice)
 
         command = (
-            SQL_UPDATE + quote_column(table_name) +
-            SQL_SET +
-            sql_list([quote_column(k) + "=" + v for k, v in new_values.items()]) +
-            SQL_WHERE +
-            where_clause
+            SQL_UPDATE
+            + quote_column(table_name)
+            + SQL_SET
+            + sql_list([quote_column(k) + "=" + v for k, v in new_values.items()])
+            + SQL_WHERE
+            + where_clause
         )
         self.execute(command, {})
 
     def sort2sqlorderby(self, sort):
         sort = jx.normalize_sort_parameters(sort)
-        return sql_list([quote_column(s.field) + (SQL_DESC if s.sort == -1 else SQL_ASC) for s in sort])
+        return sql_list([
+            quote_column(s.field) + (SQL_DESC if s.sort == -1 else SQL_ASC)
+            for s in sort
+        ])
 
     def about(self, table_name):
         try:
             with self.transaction() as t:
-                return t.query("DESC"+quote_column(table_name))
+                return t.query("DESC" + quote_column(table_name))
         except Exception as cause:
             return None
 
+    def get_tables(self):
+        result = self.query(str(sql_query({
+            "from": "information_schema.tables",
+            "where": {"eq": {"table_schema": self.schema}},
+            "orderby": "table_name",
+        })))
+        return list_to_data([{"name": d.TABLE_NAME} for d in result])
+
+    def get_relations(self, table):
+        raw_relations = self.query(
+            """
+            SELECT
+                table_schema,
+                table_name,
+                referenced_table_schema,
+                referenced_table_name,
+                referenced_column_name,
+                constraint_name,
+                column_name,
+                ordinal_position
+            FROM
+                information_schema.key_column_usage
+            WHERE
+                referenced_column_name IS NOT NULL
+            """
+        )
+        if raw_relations:
+            raise NotImplementedError()
+        return raw_relations
+
+
 @override
-def execute_sql(
-    host,
-    username,
-    password,
-    sql,
-    schema=None,
-    param=None,
-    kwargs=None
-):
+def execute_sql(host, username, password, sql, schema=None, param=None, kwargs=None):
     """EXECUTE MANY LINES OF SQL (FROM SQLDUMP FILE, MAYBE?"""
     kwargs.schema = coalesce(kwargs.schema, kwargs.database)
 
@@ -506,7 +619,7 @@ def execute_sql(
         MYSQL_EXECUTABLE,
         "-h{0}".format(host),
         "-u{0}".format(username),
-        "-p{0}".format(password)
+        "-p{0}".format(password),
     ]
     if schema:
         args.append("{0}".format(schema))
@@ -517,22 +630,23 @@ def execute_sql(
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            bufsize=-1
+            bufsize=-1,
         )
         if is_text(sql):
             sql = sql.encode("utf8")
         (output, _) = proc.communicate(sql)
     except Exception as e:
-        raise Log.error("Can not call \"mysql\"", e)
+        raise Log.error('Can not call "mysql"', e)
 
     if proc.returncode:
         if len(sql) > 10000:
             sql = "<" + text(len(sql)) + " bytes of sql>"
         Log.error(
-            "Unable to execute sql: return code {{return_code}}, {{output}}:\n {{sql}}\n",
+            "Unable to execute sql: return code {{return_code}}, {{output}}:\n"
+            " {{sql}}\n",
             sql=indent(sql),
             return_code=proc.returncode,
-            output=output
+            output=output,
         )
 
 
@@ -545,12 +659,12 @@ def execute_file(
     schema=None,
     param=None,
     ignore_errors=False,
-    kwargs=None
+    kwargs=None,
 ):
     # MySqldb provides no way to execute an entire SQL file in bulk, so we
     # have to shell out to the commandline client.
     file = File(filename)
-    if file.extension == 'zip':
+    if file.extension == "zip":
         sql = file.read_zipfile()
     else:
         sql = File(filename).read()
@@ -561,16 +675,17 @@ def execute_file(
     else:
         execute_sql(sql=sql, kwargs=kwargs)
 
+
 ESCAPE_DCT = {
-    u"\\": u"\\\\",
-    u"\0": u"\\0",
-    u"\"": u'\\"',
-    u"\'": u"''",
-    u"\b": u"\\b",
-    u"\f": u"\\f",
-    u"\n": u"\\n",
-    u"\r": u"\\r",
-    u"\t": u"\\t"
+    "\\": "\\\\",
+    "\0": "\\0",
+    '"': '\\"',
+    "'": "''",
+    "\b": "\\b",
+    "\f": "\\f",
+    "\n": "\\n",
+    "\r": "\\r",
+    "\t": "\\t",
 }
 
 
@@ -597,12 +712,20 @@ def quote_value(value):
         elif is_data(value):
             return quote_value(json_encode(value))
         elif isinstance(value, datetime):
-            return SQL("str_to_date('" + value.strftime("%Y%m%d%H%M%S.%f") + "', '%Y%m%d%H%i%s.%f')")
+            return SQL(
+                "str_to_date('"
+                + value.strftime("%Y%m%d%H%M%S.%f")
+                + "', '%Y%m%d%H%i%s.%f')"
+            )
         elif isinstance(value, Date):
-            return SQL("str_to_date('" + value.format("%Y%m%d%H%M%S.%f") + "', '%Y%m%d%H%i%s.%f')")
+            return SQL(
+                "str_to_date('"
+                + value.format("%Y%m%d%H%M%S.%f")
+                + "', '%Y%m%d%H%i%s.%f')"
+            )
         elif is_number(value):
             return SQL(text(value))
-        elif hasattr(value, '__iter__'):
+        elif hasattr(value, "__iter__"):
             return quote_value(json_encode(value))
         else:
             return quote_value(text(value))
@@ -628,8 +751,6 @@ def quote_column(*path):
         Log.error("Not expacted", cause=e)
 
 
-
-
 def quote_sql(value, param=None):
     """
     USED TO EXPAND THE PARAMETERS TO THE SQL() OBJECT
@@ -644,7 +765,7 @@ def quote_sql(value, param=None):
             return SQL(value)
         elif is_data(value):
             return quote_value(json_encode(value))
-        elif hasattr(value, '__iter__'):
+        elif hasattr(value, "__iter__"):
             return quote_list(value)
         else:
             return text(value)
@@ -667,10 +788,7 @@ def quote_list(values):
 
 
 def sql_call(func_name, parameters):
-    return ConcatSQL(
-        SQL(func_name),
-        sql_iso(JoinSQL(SQL_COMMA, parameters))
-    )
+    return ConcatSQL(SQL(func_name), sql_iso(JoinSQL(SQL_COMMA, parameters)))
 
 
 def sql_eq(**item):
@@ -759,7 +877,9 @@ def int_list_packer(term, values):
             if last == curr_start:
                 # not a range yet, so just add as singlton
                 singletons.add(last)
-            elif last - curr_start - len(curr_excl) < MIN_RANGE or ((last - curr_start) < len(curr_excl) * DENSITY):
+            elif last - curr_start - len(curr_excl) < MIN_RANGE or (
+                (last - curr_start) < len(curr_excl) * DENSITY
+            ):
                 # small ranges are singletons, sparse ranges are singletons
                 singletons |= set(range(curr_start, last + 1))
                 singletons -= curr_excl
@@ -791,7 +911,9 @@ def int_list_packer(term, values):
     if last == curr_start:
         # not a range yet, so just add as singlton
         singletons.add(last)
-    elif last - curr_start - len(curr_excl) < MIN_RANGE or ((last - curr_start) < len(curr_excl) * DENSITY):
+    elif last - curr_start - len(curr_excl) < MIN_RANGE or (
+        (last - curr_start) < len(curr_excl) * DENSITY
+    ):
         # small ranges are singletons, sparse ranges are singletons
         singletons |= set(range(curr_start, last + 1))
         singletons -= curr_excl
@@ -805,10 +927,7 @@ def int_list_packer(term, values):
         if exclude:
             r = {"and": [r, {"not": {"terms": {term: jx.sort(exclude)}}}]}
         if singletons:
-            return {"or": [
-                {"terms": {term: jx.sort(singletons)}},
-                r
-            ]}
+            return {"or": [{"terms": {term: jx.sort(singletons)}}, r]}
         else:
             return r
     else:
@@ -870,9 +989,7 @@ def _esfilter2sqlwhere(esfilter):
         ]))
     elif esfilter.eq:
         col, val = first(esfilter.eq.items())
-        return ConcatSQL(
-            quote_column(col) , SQL_EQ , quote_value(val)
-        )
+        return ConcatSQL(quote_column(col), SQL_EQ, quote_value(val))
     elif esfilter.terms:
         for col, v in esfilter.terms.items():
             if len(v) == 0:
@@ -885,7 +1002,9 @@ def _esfilter2sqlwhere(esfilter):
                     filter = int_list_packer(col, int_list)
                     if has_null:
                         return esfilter2sqlwhere({"or": [{"missing": col}, filter]})
-                    elif 'terms' in filter and set(filter['terms'].get(col, [])) == set(int_list):
+                    elif "terms" in filter and set(filter["terms"].get(
+                        col, []
+                    )) == set(int_list):
                         return quote_column(col) + " in " + quote_list(int_list)
                     else:
                         return esfilter2sqlwhere(filter)
@@ -902,25 +1021,22 @@ def _esfilter2sqlwhere(esfilter):
         return sql_iso(esfilter.script)
     elif esfilter.gt:
         k, v = first(esfilter.gt.items())
-        return ConcatSQL(
-            quote_column(k),
-            SQL_GT,
-            quote_value(v)
-        )
+        return ConcatSQL(quote_column(k), SQL_GT, quote_value(v))
     elif esfilter.range:
-        name2sign = {
-            "gt": SQL(">"),
-            "gte": SQL(">="),
-            "lte": SQL("<="),
-            "lt": SQL("<")
-        }
+        name2sign = {"gt": SQL(">"), "gte": SQL(">="), "lte": SQL("<="), "lt": SQL("<")}
 
         def single(col, r):
             min = coalesce(r["gte"], r[">="])
             max = coalesce(r["lte"], r["<="])
             if min != None and max != None:
                 # SPECIAL CASE (BETWEEN)
-                sql = quote_column(col) + SQL(" BETWEEN ") + quote_value(min) + SQL_AND + quote_value(max)
+                sql = (
+                    quote_column(col)
+                    + SQL(" BETWEEN ")
+                    + quote_value(min)
+                    + SQL_AND
+                    + quote_value(max)
+                )
             else:
                 sql = SQL_AND.join(
                     quote_column(col) + name2sign[sign] + quote_value(value)
@@ -947,7 +1063,10 @@ def _esfilter2sqlwhere(esfilter):
     elif esfilter.match_all:
         return SQL_TRUE
     elif esfilter.instr:
-        return sql_iso(SQL_AND.join(["instr" + sql_iso(quote_column(col) + ", " + quote_value(val)) + ">0" for col, val in esfilter.instr.items()]))
+        return sql_iso(SQL_AND.join([
+            "instr" + sql_iso(quote_column(col) + ", " + quote_value(val)) + ">0"
+            for col, val in esfilter.instr.items()
+        ]))
     else:
         Log.error("Can not convert esfilter to SQL: {{esfilter}}", esfilter=esfilter)
 
@@ -974,7 +1093,7 @@ _mysql_type_to_json_type = {
     "timestamp": TIME,
     "tinyint": INTEGER,
     "tinytext": STRING,
-    "varchar": STRING
+    "varchar": STRING,
 }
 
 
@@ -987,15 +1106,25 @@ def mysql_type_to_json_type(mysql_type):
     return _mysql_type_to_json_type[simple_type]
 
 
-
-json_type_to_mysql_type = {
+_json_type_to_mysql_type = {
     INTEGER: "bigint",
-    STRING: "varchar(65000)",
+    STRING: "varchar",
     TIME: "datetime",
     NUMBER: "double",
-    INTERVAL: "timestamp"
+    INTERVAL: "timestamp",
 }
 
+
+def json_type_to_mysql_type(json_type, value):
+    mysql_type = _json_type_to_mysql_type.get(json_type)
+    if json_type == STRING:
+        length = min(16, round_up_pow2(len(value)))
+        mysql_type = mysql_type + f"({length})"
+    return mysql_type
+
+
+def get_es_type_length(es_type):
+    return int(strings.between(es_type, "(", ")"))
 
 
 @cache(duration=DAY)
@@ -1003,6 +1132,7 @@ def get_ssl_pem_file(url):
     filename = File(".pem") / URL(url).host
     filename.write_bytes(http.get(url).content)
     return {"cafile": filename.abspath}
+
 
 _simple_word = re.compile(r"^[_a-zA-Z][_0-9a-zA-Z]*$", re.UNICODE)
 
@@ -1039,6 +1169,7 @@ def sql_lt(**item):
     k, v = first(item.items())
     return ConcatSQL(quote_column(k), SQL_LT, quote_value(v))
 
+
 def sql_create(table, properties, primary_key=None, unique=None):
     """
     :param table:  NAME OF THE TABLE TO CREATE
@@ -1065,7 +1196,9 @@ def sql_create(table, properties, primary_key=None, unique=None):
         acc.append(sql_iso(sql_list([quote_column(c) for c in listwrap(unique)])))
 
     acc.append(SQL_CP)
-    if primary_key and not (len(primary_key) == 1 and properties[primary_key[0]] == 'INTEGER'):
+    if primary_key and not (
+        len(primary_key) == 1 and properties[primary_key[0]] == "INTEGER"
+    ):
         acc.append(SQL(" WITHOUT ROWID"))
     return ConcatSQL(*acc)
 
@@ -1085,4 +1218,3 @@ def sql_insert(table, records):
 BEGIN = "BEGIN"
 COMMIT = "COMMIT"
 ROLLBACK = "ROLLBACK"
-

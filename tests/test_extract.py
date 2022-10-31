@@ -57,9 +57,8 @@ class TestExtract(FuzzyTestCase):
 
         result = []
         with db.transaction():
-            cursor = db.query(sql, stream=True, row_tuples=True)
-            cursor = list(cursor)
-            extractor.construct_docs(cursor, result.append, False)
+            table = db.query(sql, format="table")
+            extractor.construct_docs(table.data, result.append, False)
 
         self.assertEqual(result, expected, "expecting identical")
         self.assertEqual(expected, result, "expecting identical")

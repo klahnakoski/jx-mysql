@@ -9,6 +9,9 @@
 #
 
 from copy import copy
+from math import log
+
+from mo_math import ceiling
 
 from jx_base import DataClass
 from jx_base import Snowflake
@@ -65,7 +68,6 @@ def is_type(value, type):
     elif isinstance(value, (int, float, Date)) and type == "number":
         return True
     return False
-
 
 
 def _make_column_name(number):
@@ -251,3 +253,7 @@ class ColumnLocator(object):
 
     def __getitem__(self, column_name):
         return [c for c in self.columns if untype_path(c.name) == column_name]
+
+
+def round_up_pow2(value):
+    return pow(2, ceiling(log(value, 2)))

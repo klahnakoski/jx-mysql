@@ -39,9 +39,9 @@ class TestInsert(FuzzyTestCase):
             {"a": 1, "b": 2},
             {"a": "a", "b": "b"}
         ])
-        result = self.db.query("SELECT * FROM test_table")
+        result = self.db.query("SELECT * FROM test_table", format="list")
         expected = [
-            {"a.N": 1, "b.N": 2},
-            {"a.S": "a", "b.S": "b"}
+            {"a.$N": 1, "b.$N": 2},
+            {"a.$S": "a", "b.$S": "b"}
         ]
         self.assertEqual(result, expected)

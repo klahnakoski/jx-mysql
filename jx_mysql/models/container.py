@@ -8,13 +8,15 @@
 
 from __future__ import absolute_import, division, unicode_literals
 
-from jx_sqlite.expressions._utils import SQLang
-
-from jx_base import Facts, Column
+from jx_base import Column
 from jx_base.models.container import Container as _Container
 from jx_mysql.models.namespace import Namespace
-# from jx_mysql.query_table import QueryTable
 from jx_mysql.models.snowflake import Snowflake
+from jx_mysql.mysql import (
+    MySql,
+    quote_column,
+    sql_eq,
+)
 from jx_mysql.mysql import (
     SQL_SELECT,
     SQL_FROM,
@@ -22,18 +24,12 @@ from jx_mysql.mysql import (
     SQL_SET,
     ConcatSQL, sql_insert, sql_create,
 )
-from jx_mysql.mysql import (
-    MySql,
-    quote_column,
-    sql_eq,
-    # sql_create,
-    # sql_insert,
-    json_type_to_mysql_type,
-)
 from jx_mysql.utils import UID, GUID, DIGITS_TABLE, ABOUT_TABLE
+from jx_sqlite.expressions._utils import SQLang
+from jx_sqlite.sqlite import json_type_to_sqlite_type
 from mo_dots import concat_field, set_default
 from mo_future import first, NEXT
-from mo_json import STRING
+from mo_json import STRING, INTEGER
 from mo_kwargs import override
 from mo_logs import Log
 from mo_threads.lock import locked
@@ -66,14 +62,13 @@ class Container(_Container):
 
         self.setup()
         self.namespace = Namespace(container=self)
-        self.about = QueryTable("meta.about", self)
         self.next_uid = self._gen_ids()  # A DELIGHTFUL SOURCE OF UNIQUE INTEGERS
 
     def _gen_ids(self):
         def output():
             while True:
                 with self.db.transaction() as t:
-                    top_id = first(first(
+                    top_id = first(
                         t
                         .query(ConcatSQL(
                             SQL_SELECT,
@@ -81,8 +76,7 @@ class Container(_Container):
                             SQL_FROM,
                             quote_column(ABOUT_TABLE),
                         ))
-                        .data
-                    ))
+                    ).next_id
                     max_id = top_id + 1000
                     t.execute(ConcatSQL(
                         SQL_UPDATE,
@@ -106,28 +100,69 @@ class Container(_Container):
                 t.execute(sql_create(DIGITS_TABLE, {"value": "INTEGER"}))
                 t.execute(sql_insert(DIGITS_TABLE, [{"value": i} for i in range(10)]))
 
-    def create_or_replace_facts(self, fact_name, uid=UID):
+    def create_table(self, table_name):
         """
-        MAKE NEW TABLE, REPLACE OLD ONE IF EXISTS
-        :param fact_name:  NAME FOR THE CENTRAL INDEX
-        :param uid: name, or list of names, for the GUID
+        CREATE NEW TABLE
+        :param table_name:  NAME FOR THE CENTRAL INDEX
         :return: Facts
         """
-        self.remove_facts(fact_name)
-        self.namespace.columns._snowflakes[fact_name] = ["."]
-
-        if uid != UID:
-            Log.error("do not know how to handle yet")
+        self.namespace.columns._snowflakes[table_name] = [table_name]
 
         command = sql_create(
-            fact_name, {UID: "INTEGER PRIMARY KEY", GUID: "TEXT"}, unique=UID
+            table_name, {UID: "INTEGER PRIMARY KEY", GUID: "TEXT"}, unique=UID
         )
 
         with self.db.transaction() as t:
             t.execute(command)
 
-        snowflake = Snowflake(fact_name, self.ns)
-        return Facts(self, snowflake)
+        self.namespace.columns.add(Column(
+            name=UID,
+            es_column=UID,
+            es_index=table_name,
+            es_type=json_type_to_sqlite_type[INTEGER],
+            json_type=INTEGER,
+            nested_path=[table_name],
+            multi=1,
+            last_updated=Date.now(),
+        ))
+        self.namespace.columns.add(Column(
+            name=GUID,
+            es_column=GUID,
+            es_index=table_name,
+            es_type=json_type_to_sqlite_type[STRING],
+            json_type=STRING,
+            nested_path=[table_name],
+            multi=1,
+            last_updated=Date.now(),
+        ))
+        self.namespace.columns.primary_keys[table_name]= UID,
+
+        return self.get_table(table_name)
+
+    def create_or_replace_table(self, table_name, uid=UID):
+        """
+        MAKE NEW TABLE, REPLACE OLD ONE IF EXISTS
+        :param table_name:  NAME FOR THE CENTRAL INDEX
+        :param uid: name, or list of names, for the GUID
+        :return: Facts
+        """
+        if uid != UID:
+            Log.error("do not know how to handle yet")
+
+        self.remove_facts(table_name)
+        return self.create_table(table_name)
+
+    def get_or_create_table(self, table_name, uid=UID):
+        """
+        FIND TABLE BY NAME, OR CREATE IT IF IT DOES NOT EXIST
+        :param table_name:  NAME FOR THE CENTRAL INDEX
+        :param uid: name, or list of names, for the GUID
+        :return: Facts
+        """
+        about = self.db.about(table_name)
+        if not about:
+            return self.create_table(table_name)
+        return self.get_table(table_name)
 
     def remove_facts(self, fact_name):
         paths = self.namespace.columns._snowflakes[fact_name]
@@ -138,40 +173,12 @@ class Container(_Container):
                     t.execute("DROP TABLE " + quote_column(full_name))
             self.namespace.columns.remove_table(fact_name)
 
-    def get_or_create_facts(self, fact_name, uid=UID):
-        """
-        FIND TABLE BY NAME, OR CREATE IT IF IT DOES NOT EXIST
-        :param fact_name:  NAME FOR THE CENTRAL INDEX
-        :param uid: name, or list of names, for the GUID
-        :return: Facts
-        """
-        about = self.db.about(fact_name)
-        if not about:
-            if uid != UID:
-                Log.error("do not know how to handle yet")
-
-            self.namespace.columns._snowflakes[fact_name] = ["."]
-            self.namespace.columns.add(Column(
-                name="_id",
-                es_column="_id",
-                es_index=fact_name,
-                es_type=json_type_to_mysql_type[STRING],
-                json_type=STRING,
-                nested_path=["."],
-                multi=1,
-                last_updated=Date.now(),
-            ))
-            command = sql_create(
-                fact_name, {UID: "INTEGER PRIMARY KEY", GUID: "TEXT"}, unique=UID
-            )
-
-            with self.db.transaction() as t:
-                t.execute(command)
-
-        return QueryTable(fact_name, self)
-
     def get_table(self, table_name):
-        return QueryTable(table_name, self)
+        snowflake = Snowflake(table_name, self.namespace)
+        return snowflake.get_table([table_name])
+
+    def get_snowflake(self, table_name):
+        return Snowflake(table_name, self.namespace)
 
     @property
     def language(self):
