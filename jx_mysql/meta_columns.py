@@ -34,7 +34,8 @@ from mo_dots import (
     startswith_field,
     unwraplist,
     wrap,
-    list_to_data, to_data,
+    list_to_data,
+    to_data,
 )
 from mo_json import STRUCT, IS_NULL
 from mo_json.typed_encoder import unnest_path, untyped
@@ -91,7 +92,7 @@ class ColumnList(Table, Container):
         # FIND ALL TABLES
         tables = self.db.query(sql_query({
             "from": "information_schema.tables",
-            "where": {"eq":{"table_schema":self.db.schema}},
+            "where": {"eq": {"table_schema": self.db.schema}},
             "orderby": "table_name",
         }))
         last_nested_path = []
@@ -109,19 +110,21 @@ class ColumnList(Table, Container):
                 last_nested_path = []
 
             full_nested_path = [table_name] + last_nested_path
-            self._snowflakes.setdefault(full_nested_path[-1], []).append(full_nested_path)
+            self._snowflakes.setdefault(
+                full_nested_path[-1], []
+            ).append(full_nested_path)
 
             # LOAD THE COLUMNS
             details = self.db.about(table_name)
 
             for d in details:
                 name = d.Field
-                dtype= d.Type
+                dtype = d.Type
                 pk = d.Key
                 cname, ctype = untyped_column(name)
 
                 if pk:
-                    (to_data(self.primary_keys)[table.name]+[])[pk] = name
+                    (to_data(self.primary_keys)[table.name] + [])[pk] = name
 
                 self.add(Column(
                     name=cname,
@@ -144,11 +147,7 @@ class ColumnList(Table, Container):
             if table_name.startswith("meta."):
                 self._update_meta()
 
-            return set(
-                col
-                for cols in self.data[table_name].values()
-                for col in cols
-            )
+            return set(col for cols in self.data[table_name].values() for col in cols)
 
     def find(self, fact_table, abs_column_name=None):
         with self.locker:

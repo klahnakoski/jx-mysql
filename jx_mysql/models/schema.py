@@ -97,7 +97,7 @@ class Schema(object):
             for n in names
             for r in relations
             if startswith_field(n, r.many_table)
-               and r.ones_table == self.get_table_name()
+            and r.ones_table == self.get_table_name()
         ]
         if not matches:
             return None, None
@@ -123,7 +123,9 @@ class Schema(object):
         return set(c.name for c in self.columns)
 
     def get_primary_keys(self):
-        return self.snowflake.namespace.columns.primary_keys.get(self.nested_path[0], tuple())
+        return self.snowflake.namespace.columns.primary_keys.get(
+            self.nested_path[0], tuple()
+        )
 
     @property
     def columns(self):
@@ -131,11 +133,13 @@ class Schema(object):
 
     @property
     def get_type(self) -> JxType:
-        return JxType(**{
-            c.es_column: to_jx_type(c.json_type)
-            for c in self.snowflake.namespace.get_columns(self.nested_path[0])
-            if c.json_type not in [OBJECT, EXISTS]
-        })
+        return JxType(
+            **{
+                c.es_column: to_jx_type(c.json_type)
+                for c in self.snowflake.namespace.get_columns(self.nested_path[0])
+                if c.json_type not in [OBJECT, EXISTS]
+            }
+        )
 
     def get_columns(self, prefix):
         full_name, _ = untyped_column(concat_field(

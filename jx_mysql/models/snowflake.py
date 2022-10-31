@@ -23,7 +23,8 @@ from jx_mysql.utils import (
     UID,
     GUID,
     PARENT,
-    untype_field, ORDER,
+    untype_field,
+    ORDER,
 )
 from mo_dots import (
     concat_field,
@@ -80,7 +81,10 @@ class Snowflake(jx_base.Snowflake):
             elif required_change.alter:
                 self._alter_column(required_change.alter, required_change.length)
             else:
-                Log.error("can not handle {{required_change}}", required_change=required_change)
+                Log.error(
+                    "can not handle {{required_change}}",
+                    required_change=required_change,
+                )
 
     def _add_column(self, column):
         cname = column.name
@@ -199,7 +203,7 @@ class Snowflake(jx_base.Snowflake):
                 json_type=INTEGER,
                 nested_path=[destination_table],
                 last_updated=now,
-                multi=0
+                multi=0,
             ))
             self.namespace.columns.add(jx_base.Column(
                 name=PARENT,
@@ -207,9 +211,9 @@ class Snowflake(jx_base.Snowflake):
                 es_index=destination_table,
                 es_type="INTEGER",
                 json_type=INTEGER,
-                nested_path = [destination_table],
-                last_updated = now,
-                multi=0
+                nested_path=[destination_table],
+                last_updated=now,
+                multi=0,
             ))
             self.namespace.columns.add(jx_base.Column(
                 name=ORDER,
@@ -217,12 +221,12 @@ class Snowflake(jx_base.Snowflake):
                 es_index=destination_table,
                 es_type="INTEGER",
                 json_type=INTEGER,
-                nested_path = [destination_table],
-                last_updated = now,
-                multi=0
+                nested_path=[destination_table],
+                last_updated=now,
+                multi=0,
             ))
             self.namespace.relations.extend(self.namespace.container.db.get_relations(destination_table))
-            self.namespace.columns.primary_keys[destination_table] = UID,
+            self.namespace.columns.primary_keys[destination_table] = (UID,)
 
         # TEST IF THERE IS ANY DATA IN THE NEW NESTED ARRAY
         if not moving_columns:
@@ -297,7 +301,7 @@ class Snowflake(jx_base.Snowflake):
 
     def _alter_column(self, column, length):
         table_name = column.nested_path[0]
-        new_es_type = json_type_to_mysql_type(column.json_type)+f"({length})"
+        new_es_type = json_type_to_mysql_type(column.json_type) + f"({length})"
         temp_column = concat_field(untype_field(column.es_column)[0], SQL_IS_NULL_KEY)
 
         with self.namespace.container.db.transaction() as t:
@@ -308,7 +312,7 @@ class Snowflake(jx_base.Snowflake):
                 SQL_RENAME_COLUMN,
                 quote_column(column.es_column),
                 SQL_TO,
-                quote_column(temp_column)
+                quote_column(temp_column),
             ))
             # MAKE NEW COLUMN
             t.execute(ConcatSQL(
@@ -325,7 +329,7 @@ class Snowflake(jx_base.Snowflake):
                 SQL_SET,
                 quote_column(column.es_column),
                 SQL_EQ,
-                quote_column(temp_column)
+                quote_column(temp_column),
             ))
             # DELETE OLD COLUMNS
             t.execute(ConcatSQL(

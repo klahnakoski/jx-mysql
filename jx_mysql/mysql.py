@@ -19,7 +19,8 @@ from mo_dots import (
     listwrap,
     unwrap,
     wrap,
-    list_to_data, dict_to_data,
+    list_to_data,
+    dict_to_data,
 )
 from mo_files import File, URL
 from mo_future import transpose, utf8_json_encoder
@@ -295,7 +296,9 @@ class MySql(object):
             if param:
                 sql = expand_template(sql, quote_param(param))
             sql = self.preamble + outdent(sql)
-            self.debug and Log.note("Execute SQL:\n{{sql}}", sql=indent(sql), stack_depth=1)
+            self.debug and Log.note(
+                "Execute SQL:\n{{sql}}", sql=indent(sql), stack_depth=1
+            )
 
             if not stream:
                 with self.db.cursor() as cursor:
@@ -308,15 +311,11 @@ class MySql(object):
                     if format == "table":
                         return dict_to_data({"header": columns, "data": list(cursor)})
                     elif format == "list":
-                        return [
-                            dict(zip(columns, row))
-                            for row in cursor
-                        ]
+                        return [dict(zip(columns, row)) for row in cursor]
                     else:
                         # original bugzilla etl (names are dot-delimited paths)
                         return [
-                            leaves_to_data(dict(zip(columns, row)))
-                            for row in cursor
+                            leaves_to_data(dict(zip(columns, row))) for row in cursor
                         ]
 
             Log.error("not tested")

@@ -18,7 +18,8 @@ from jx_base import Snowflake
 from jx_sqlite.sqlite import quote_column, SQL_DESC, SQL_ASC
 from mo_dots import (
     Data,
-    is_missing, )
+    is_missing,
+)
 from mo_future import text
 from mo_json import json2value, INTEGER
 from mo_json.typed_encoder import untype_path
@@ -101,6 +102,7 @@ def get_column(column, json_type=None, default=None):
     to_type = json_type_to_python_type.get(json_type)
 
     if to_type is None:
+
         def _get(row):
             value = row[column]
             if is_missing(value):
@@ -223,11 +225,8 @@ type_key_json_type = {
     _B: T_BOOLEAN,
 }
 
-sort_to_sqlite_order = {
-    -1: SQL_DESC,
-    0: SQL_ASC,
-    1: SQL_ASC
-}
+sort_to_sqlite_order = {-1: SQL_DESC, 0: SQL_ASC, 1: SQL_ASC}
+
 
 class BasicSnowflake(Snowflake):
     def __init__(self, query_paths, columns):

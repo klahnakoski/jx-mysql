@@ -25,7 +25,6 @@ constants.set(settings.constants)
 
 
 class TestInsert(FuzzyTestCase):
-
     def setUp(self):
         config = mo_json_config.get("file://tests/resources/config/test.json")
         self.db = MySql(kwargs=config.database)
@@ -35,13 +34,7 @@ class TestInsert(FuzzyTestCase):
 
     def test_insert_docs(self):
         facts = Facts("test_table", Container(self.db))
-        facts.insert([
-            {"a": 1, "b": 2},
-            {"a": "a", "b": "b"}
-        ])
+        facts.insert([{"a": 1, "b": 2}, {"a": "a", "b": "b"}])
         result = self.db.query("SELECT * FROM test_table", format="list")
-        expected = [
-            {"a.$N": 1, "b.$N": 2},
-            {"a.$S": "a", "b.$S": "b"}
-        ]
+        expected = [{"a.$N": 1, "b.$N": 2}, {"a.$S": "a", "b.$S": "b"}]
         self.assertEqual(result, expected)

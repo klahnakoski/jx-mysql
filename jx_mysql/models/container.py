@@ -22,7 +22,9 @@ from jx_mysql.mysql import (
     SQL_FROM,
     SQL_UPDATE,
     SQL_SET,
-    ConcatSQL, sql_insert, sql_create,
+    ConcatSQL,
+    sql_insert,
+    sql_create,
 )
 from jx_mysql.utils import UID, GUID, DIGITS_TABLE, ABOUT_TABLE
 from jx_sqlite.expressions._utils import SQLang
@@ -68,15 +70,12 @@ class Container(_Container):
         def output():
             while True:
                 with self.db.transaction() as t:
-                    top_id = first(
-                        t
-                        .query(ConcatSQL(
-                            SQL_SELECT,
-                            quote_column("next_id"),
-                            SQL_FROM,
-                            quote_column(ABOUT_TABLE),
-                        ))
-                    ).next_id
+                    top_id = first(t.query(ConcatSQL(
+                        SQL_SELECT,
+                        quote_column("next_id"),
+                        SQL_FROM,
+                        quote_column(ABOUT_TABLE),
+                    ))).next_id
                     max_id = top_id + 1000
                     t.execute(ConcatSQL(
                         SQL_UPDATE,
@@ -135,7 +134,7 @@ class Container(_Container):
             multi=1,
             last_updated=Date.now(),
         ))
-        self.namespace.columns.primary_keys[table_name]= UID,
+        self.namespace.columns.primary_keys[table_name] = (UID,)
 
         return self.get_table(table_name)
 

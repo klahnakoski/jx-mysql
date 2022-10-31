@@ -24,7 +24,8 @@ from jx_mysql.utils import (
     PARENT,
     UID,
     typed_column,
-    untyped_column, )
+    untyped_column,
+)
 from mo_dots import (
     startswith_field,
     from_data,
@@ -58,7 +59,9 @@ class Facts(jx_base.Facts):
         required_changes = []
         snowflake = self.container.get_or_create_table(self.name).schema.snowflake
 
-        def _flatten(doc, doc_path, nested_path: NestedPath, row, row_num, row_id, parent_id):
+        def _flatten(
+            doc, doc_path, nested_path: NestedPath, row, row_num, row_id, parent_id
+        ):
             """
             :param doc: the data we are pulling apart
             :param doc_path: path to this (sub)doc
@@ -120,8 +123,7 @@ class Facts(jx_base.Facts):
                         json_type=json_type,
                         es_type=es_type,
                         es_column=typed_column(
-                            abs_name,
-                            json_type_to_sql_type_key.get(json_type),
+                            abs_name, json_type_to_sql_type_key.get(json_type),
                         ),
                         es_index=table_name,
                         cardinality=0,
@@ -149,7 +151,11 @@ class Facts(jx_base.Facts):
                         required_changes.append({"add": curr_column})
 
                     insertion.active_columns.append(curr_column)
-                elif json_type == STRING and get_es_type_length(curr_column.es_type) < get_es_type_length(es_type):
+                elif (
+                    json_type == STRING
+                    and get_es_type_length(curr_column.es_type)
+                    < get_es_type_length(es_type)
+                ):
                     required_changes.append({"alter": curr_column, "es_type": es_type})
                 elif curr_column.json_type == ARRAY and json_type == OBJECT:
                     # ALWAYS PROMOTE OBJECTS TO NESTED
@@ -212,7 +218,8 @@ class Facts(jx_base.Facts):
                         _flatten(
                             doc=child_data,
                             doc_path=abs_name,
-                            nested_path=[concat_field(self.name, curr_column.es_column)] + nested_path,
+                            nested_path=[concat_field(self.name, curr_column.es_column)]
+                            + nested_path,
                             row=child_row,
                             row_num=child_row_num,
                             row_id=child_uid,
