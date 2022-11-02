@@ -10,6 +10,7 @@
 import subprocess
 from urllib.parse import unquote
 
+from mo_future.cache import cache
 from pymysql import connect, cursors
 
 from jx_mysql.utils import round_up_pow2
@@ -32,8 +33,6 @@ from mo_logs.strings import expand_template, indent, outdent
 from mo_math import is_number
 from mo_sql import *
 from mo_times import Date, DAY
-from pyLibrary import convert
-from pyLibrary.meta import cache
 
 DEBUG = True
 MAX_BATCH_SIZE = 1
@@ -995,7 +994,7 @@ def _esfilter2sqlwhere(esfilter):
                 return "FALSE"
 
             try:
-                int_list = convert.value2intlist(v)
+                int_list = value2intlist(v)
                 has_null = any(vv == None for vv in v)
                 if int_list:
                     filter = int_list_packer(col, int_list)
@@ -1213,7 +1212,22 @@ def sql_insert(table, records):
         sql_list(sql_iso(sql_list([quote_value(r[k]) for k in keys])) for r in records),
     )
 
+def value2intlist(value):
+    if value == None:
+        return []
+    elif is_many(value):
+        output = [int(d) for d in value if d != "" and d != None]
+        return output
+    elif isinstance(value, int):
+        return [value]
+    elif value.strip() == "":
+        return []
+    else:
+        return [int(value)]
+
 
 BEGIN = "BEGIN"
 COMMIT = "COMMIT"
 ROLLBACK = "ROLLBACK"
+
+

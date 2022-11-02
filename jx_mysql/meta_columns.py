@@ -42,7 +42,6 @@ from mo_json.typed_encoder import unnest_path, untyped
 from mo_logs import Log
 from mo_threads import Queue
 from mo_times.dates import Date
-from pyLibrary.meta import _FakeLock
 
 DEBUG = False
 singlton = None
@@ -462,3 +461,13 @@ def mark_as_deleted(col):
     col.multi = 0
     col.partitions = None
     col.last_updated = Date.now()
+
+
+class _FakeLock():
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+

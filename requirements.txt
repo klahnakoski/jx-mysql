@@ -8,7 +8,6 @@ mo-logs
 mo-http
 mo-sql
 mo-times
-pyLibrary
 mo-collections
 mo-math
 pymysql
