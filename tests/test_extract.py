@@ -24,7 +24,7 @@ from jx_mysql.mysql import MySql, execute_file
 from jx_mysql.mysql_snowflake_extractor import MySqlSnowflakeExtractor
 from mo_testing.fuzzytestcase import FuzzyTestCase
 
-settings = startup.read_settings(filename=os.environ['TEST_CONFIG'] or "tests/resources/config/test.json")
+settings = startup.read_settings(filename=os.environ.get('TEST_CONFIG') or "tests/resources/config/test.json")
 constants.set(settings.constants)
 
 
