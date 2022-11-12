@@ -13,20 +13,20 @@
     "description": "jx-mysql - JSON Expressions for MySql",
     "include_package_data": true,
     "install_requires": [
-             "jx-python>=3.78.20194", "mo-collections>=3.77.20190",
-               "mo-dots>=3.85.20198",       "mo-files>=3.85.20198",
-             "mo-future>=3.71.20168",        "mo-http>=3.77.20190",
-               "mo-json>=3.80.20196",      "mo-kwargs>=3.82.20197",
-               "mo-logs>=3.85.20198",        "mo-math>=3.77.20190",
-                "mo-sql>=3.77.20190",       "mo-times>=3.76.20190",
-             "pyLibrary>=3.47.20042",                    "pymysql"
+             "jx-python==4.239.22316", "mo-collections==5.239.22316",
+               "mo-dots==9.238.22316",       "mo-files==5.239.22316",
+             "mo-future==6.230.22310",        "mo-http==4.239.22316",
+               "mo-json==6.239.22316",      "mo-kwargs==7.238.22316",
+               "mo-logs==7.238.22316",        "mo-math==7.239.22316",
+                "mo-sql==4.239.22316",       "mo-times==5.239.22316",
+                            "pymysql"
     ],
     "license": "MPL 2.0",
     "long_description": {
         "$concat": [
             "# jx-mysql",
             "",
-            "JSON query expressions for MySql, plus [the snowflake extractor](docs/snowflake_extractor.md)",
+            "JSON query expressions for MySql, plus [the snowflake extractor](https://github.com/klahnakoski/jx-mysql/blob/dev/docs/snowflake_extractor.md)",
             ""
         ],
         "separator": "\n"
@@ -35,5 +35,5 @@
     "name": "jx-mysql",
     "packages": ["jx_mysql"],
     "url": "https://github.com/klahnakoski/jx-mysql",
-    "version": "3.85.20198"
+    "version": "3.239.22316"
 }
