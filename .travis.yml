@@ -13,5 +13,5 @@ install:
 
 script:
   - export PYTHONPATH=.:vendor
-  - export TEST_CONFIG=tests/config/travis.json
+  - export TEST_CONFIG=tests/resources/config/travis.json
   - python -m unittest discover tests
