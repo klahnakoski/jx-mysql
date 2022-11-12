@@ -10,10 +10,8 @@
 import subprocess
 from urllib.parse import unquote
 
-from mo_future.cache import cache
 from pymysql import connect, cursors
 
-from jx_mysql.utils import round_up_pow2
 from jx_python import jx
 from mo_dots import (
     coalesce,
@@ -25,12 +23,13 @@ from mo_dots import (
 )
 from mo_files import File, URL
 from mo_future import transpose, utf8_json_encoder
+from mo_future.cache import cache
 from mo_http import http
 from mo_json import *
 from mo_kwargs import override
 from mo_logs import Except, suppress_exception, strings
 from mo_logs.strings import expand_template, indent, outdent
-from mo_math import is_number
+from mo_math import is_number, ceiling, log
 from mo_sql import *
 from mo_times import Date, DAY
 
@@ -1224,6 +1223,10 @@ def value2intlist(value):
         return []
     else:
         return [int(value)]
+
+
+def round_up_pow2(value):
+    return pow(2, ceiling(log(value, 2)))
 
 
 BEGIN = "BEGIN"

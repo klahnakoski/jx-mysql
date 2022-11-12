@@ -11,19 +11,14 @@
 from copy import copy
 from math import log
 
-from mo_math import ceiling
-
-from jx_base import DataClass
 from jx_base import Snowflake
-from jx_sqlite.sqlite import quote_column, SQL_DESC, SQL_ASC
-from mo_dots import (
-    Data,
-    is_missing,
-)
+from jx_mysql.mysql import quote_column, SQL_DESC, SQL_ASC
+from mo_dots import Data,is_missing
 from mo_future import text
 from mo_json import json2value, INTEGER
 from mo_json.typed_encoder import untype_path
 from mo_json.types import _B, _I, _N, _S, _A, T_ARRAY, T_INTEGER
+from mo_math import ceiling
 from mo_sql.utils import *
 
 
@@ -252,7 +247,3 @@ class ColumnLocator(object):
 
     def __getitem__(self, column_name):
         return [c for c in self.columns if untype_path(c.name) == column_name]
-
-
-def round_up_pow2(value):
-    return pow(2, ceiling(log(value, 2)))

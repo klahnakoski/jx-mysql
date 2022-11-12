@@ -12,15 +12,13 @@ from __future__ import absolute_import, division, unicode_literals
 from copy import copy
 from typing import List
 
-import jx_base
-from jx_base import Table, Container, Column
+from jx_base import Table, Container, Column, NestedPath, Schema
 from jx_base.meta_columns import (
     META_COLUMNS_DESC,
     META_COLUMNS_NAME,
     SIMPLE_METADATA_COLUMNS,
 )
-from jx_base.models.nested_path import NestedPath
-from jx_base.models.schema import Schema
+
 from jx_mysql.expressions._utils import sql_type_key_to_json_type
 from jx_mysql.mysql import sql_query, mysql_type_to_json_type
 from jx_mysql.utils import untyped_column
@@ -43,7 +41,11 @@ from mo_logs import Log
 from mo_threads import Queue
 from mo_times.dates import Date
 
+
 DEBUG = False
+META_TABLES_NAME = "meta.tables"
+META_COLUMNS_NAME = "meta.columns"
+META_COLUMNS_TYPE_NAME = "column"
 singlton = None
 COLUMN_LOAD_PERIOD = 10
 COLUMN_EXTRACT_PERIOD = 2 * 60
