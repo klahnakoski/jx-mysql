@@ -13,9 +13,9 @@
     "description": "jx-mysql - JSON Expressions for MySql",
     "include_package_data": true,
     "install_requires": [
-             "jx-python==4.239.22316", "mo-collections==5.239.22316",
+             "jx-python==4.241.22316", "mo-collections==5.239.22316",
                "mo-dots==9.238.22316",       "mo-files==5.239.22316",
-             "mo-future==6.230.22310",        "mo-http==4.239.22316",
+             "mo-future==6.230.22310",        "mo-http==4.241.22316",
                "mo-json==6.239.22316",      "mo-kwargs==7.238.22316",
                "mo-logs==7.238.22316",        "mo-math==7.239.22316",
                 "mo-sql==4.239.22316",       "mo-times==5.239.22316",
@@ -35,5 +35,5 @@
     "name": "jx-mysql",
     "packages": ["jx_mysql"],
     "url": "https://github.com/klahnakoski/jx-mysql",
-    "version": "3.239.22316"
+    "version": "3.241.22316"
 }
