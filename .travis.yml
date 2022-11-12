@@ -3,11 +3,13 @@ python:
   - "3.7"
   - "3.8"
   - "3.9"
+  - "3.10"
 
 services:
   - mysql
 
 install:
+  - "pip install -U setuptools"
   - "pip install ."
 
 script:
