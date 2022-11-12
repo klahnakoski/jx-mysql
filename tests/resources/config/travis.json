@@ -5,7 +5,7 @@
 		"debug": false,
 		"schema": "testing",
 		"username": "root",
-		"password": ""
+		"password": "root"
 	},
 	"debug":{
 		"trace":true,
