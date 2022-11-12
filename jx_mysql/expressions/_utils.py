@@ -20,7 +20,7 @@ from jx_base.expressions import (
 )
 from jx_base.expressions._utils import TYPE_CHECK
 from jx_base.language import Language
-from jx_sqlite.sqlite import *
+from jx_mysql.mysql import *
 from mo_future import decorate
 from mo_imports import expect
 from mo_sql.utils import *

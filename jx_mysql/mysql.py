@@ -1114,7 +1114,7 @@ _json_type_to_mysql_type = {
 
 def json_type_to_mysql_type(json_type, value):
     mysql_type = _json_type_to_mysql_type.get(json_type)
-    if json_type == STRING:
+    if value is not None and json_type == STRING:
         length = min(16, round_up_pow2(len(value)))
         mysql_type = mysql_type + f"({length})"
     return mysql_type

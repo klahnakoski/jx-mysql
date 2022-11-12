@@ -8,7 +8,7 @@
 
 from __future__ import absolute_import, division, unicode_literals
 
-from jx_base import Column
+from jx_base import Column, generateGuid
 from jx_base.models.container import Container as _Container
 from jx_mysql.models.namespace import Namespace
 from jx_mysql.models.snowflake import Snowflake
@@ -27,8 +27,8 @@ from jx_mysql.mysql import (
     sql_create,
 )
 from jx_mysql.utils import UID, GUID, DIGITS_TABLE, ABOUT_TABLE
-from jx_sqlite.expressions._utils import SQLang
-from jx_sqlite.sqlite import json_type_to_sqlite_type
+from jx_mysql.expressions._utils import SQLang
+from jx_mysql.mysql import json_type_to_mysql_type
 from mo_dots import concat_field, set_default
 from mo_future import first, NEXT
 from mo_json import STRING, INTEGER
@@ -118,7 +118,7 @@ class Container(_Container):
             name=UID,
             es_column=UID,
             es_index=table_name,
-            es_type=json_type_to_sqlite_type[INTEGER],
+            es_type=json_type_to_mysql_type(INTEGER, None),
             json_type=INTEGER,
             nested_path=[table_name],
             multi=1,
@@ -128,7 +128,7 @@ class Container(_Container):
             name=GUID,
             es_column=GUID,
             es_index=table_name,
-            es_type=json_type_to_sqlite_type[STRING],
+            es_type=json_type_to_mysql_type(STRING, generateGuid()),
             json_type=STRING,
             nested_path=[table_name],
             multi=1,
