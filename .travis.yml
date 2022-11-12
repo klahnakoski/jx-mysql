@@ -8,6 +8,10 @@ services:
   - mysql
 
 install:
+  - "mysql -uroot -hlocalhost"
+  - "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';"
+  - "FLUSH PRIVILEGES;"
+  - "exit"
   - "pip install ."
 
 script:
