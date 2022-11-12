@@ -1,0 +1,16 @@
+language: python
+python:
+  - "3.7"
+  - "3.8"
+  - "3.9"
+
+services:
+  - mysql
+
+install:
+  - "pip install ."
+
+script:
+  - export PYTHONPATH=.:vendor
+  - export TEST_CONFIG=tests/config/travis.json
+  - python -m unittest discover tests

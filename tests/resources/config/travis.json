@@ -1,0 +1,17 @@
+{
+
+	"database": {
+		"host": "localhost",
+		"debug": false,
+		"schema": "testing",
+		"username": "root",
+		"password": ""
+	},
+	"debug":{
+		"trace":true,
+		"constants": {
+			"jx_mysql.mysql.MYSQL_EXECUTABLE": "C:\\Program Files\\MariaDB 10.9\\bin\\mysql"
+		}
+	}
+
+}
