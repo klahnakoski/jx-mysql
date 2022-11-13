@@ -9,12 +9,12 @@ setup(
     description='jx-mysql - JSON Expressions for MySql',
     extras_require={"tests":["mo-testing"]},
     include_package_data=True,
-    install_requires=["jx-python==4.256.22317","mo-collections==5.252.22317","mo-dots==9.251.22317","mo-files==5.252.22317","mo-future==6.230.22310","mo-http==4.252.22317","mo-json==6.252.22317","mo-kwargs==7.252.22317","mo-logs==7.252.22317","mo-math==7.252.22317","mo-sql==4.252.22317","mo-times==5.252.22317","pymysql"],
+    install_requires=["jx-python==4.258.22317","mo-collections==5.252.22317","mo-dots==9.251.22317","mo-files==5.252.22317","mo-future==6.230.22310","mo-http==4.252.22317","mo-json==6.252.22317","mo-kwargs==7.252.22317","mo-logs==7.252.22317","mo-math==7.252.22317","mo-sql==4.252.22317","mo-times==5.252.22317","pymysql"],
     license='MPL 2.0',
     long_description='# jx-mysql\n\nJSON query expressions for MySql, plus [the snowflake extractor](https://github.com/klahnakoski/jx-mysql/blob/dev/docs/snowflake_extractor.md)\n\n|Branch      |Status   |\n|------------|---------|\n|master      | [![Build Status](https://app.travis-ci.com/klahnakoski/jx-mysql.svg?branch=master)](https://travis-ci.com/github/klahnakoski/jx-mysql) |\n|dev         | [![Build Status](https://app.travis-ci.com/klahnakoski/jx-mysql.svg?branch=dev)](https://travis-ci.com/github/klahnakoski/jx-mysql)    |\n\n',
     long_description_content_type='text/markdown',
     name='jx-mysql',
-    packages=["jx_mysql","jx_mysql/expressions","jx_mysql/models"],
+    packages=["jx_mysql","jx_mysql.expressions","jx_mysql.models"],
     url='https://github.com/klahnakoski/jx-mysql',
-    version='3.257.22317'
+    version='3.258.22317'
 )
