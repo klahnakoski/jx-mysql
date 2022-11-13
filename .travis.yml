@@ -1,16 +1,13 @@
 language: python
 python:
-  - "3.8"
-  - "3.9"
-
+- 3.9
 services:
-  - mysql
-
+- mysql
 install:
-  - "mysql -uroot -hlocalhost -e \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';FLUSH PRIVILEGES;\""
-  - "pip install ."
-
+- mysql -uroot -hlocalhost -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';FLUSH
+  PRIVILEGES;"
+- pip install .
 script:
-  - export PYTHONPATH=.:vendor
-  - export TEST_CONFIG=tests/resources/config/travis.json
-  - python -m unittest discover tests
+- export PYTHONPATH=.:vendor
+- export TEST_CONFIG=tests/resources/config/travis.json
+- python -m unittest discover tests

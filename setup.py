@@ -5,15 +5,16 @@ from setuptools import setup
 setup(
     author='Kyle Lahnakoski',
     author_email='kyle@lahnakoski.com',
-    classifiers=["Development Status :: 4 - Beta","Topic :: Software Development :: Libraries","Topic :: Software Development :: Libraries :: Python Modules","License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)","Programming Language :: Python :: 3.6","Programming Language :: Python :: 3.7","Programming Language :: Python :: 3.8"],
+    classifiers=["Development Status :: 4 - Beta","Topic :: Software Development :: Libraries","Topic :: Software Development :: Libraries :: Python Modules","License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)","Programming Language :: Python :: 3.9"],
     description='jx-mysql - JSON Expressions for MySql',
+    extras_require={"tests":["mo-testing"]},
     include_package_data=True,
-    install_requires=["jx-python==4.241.22316","mo-collections==5.239.22316","mo-dots==9.238.22316","mo-files==5.239.22316","mo-future==6.230.22310","mo-http==4.241.22316","mo-json==6.239.22316","mo-kwargs==7.238.22316","mo-logs==7.238.22316","mo-math==7.239.22316","mo-sql==4.239.22316","mo-times==5.239.22316","pymysql"],
+    install_requires=["jx-python==4.252.22317","mo-collections==5.252.22317","mo-dots==9.251.22317","mo-files==5.252.22317","mo-future==6.230.22310","mo-http==4.252.22317","mo-json==6.252.22317","mo-kwargs==7.252.22317","mo-logs==7.252.22317","mo-math==7.252.22317","mo-sql==4.252.22317","mo-times==5.252.22317","pymysql"],
     license='MPL 2.0',
-    long_description='# jx-mysql\n\nJSON query expressions for MySql, plus [the snowflake extractor](https://github.com/klahnakoski/jx-mysql/blob/dev/docs/snowflake_extractor.md)\n',
+    long_description='# jx-mysql\n\nJSON query expressions for MySql, plus [the snowflake extractor](https://github.com/klahnakoski/jx-mysql/blob/dev/docs/snowflake_extractor.md)\n\n|Branch      |Status   |\n|------------|---------|\n|master      | [![Build Status](https://app.travis-ci.com/klahnakoski/jx-mysql.svg?branch=master)](https://travis-ci.com/github/klahnakoski/jx-mysql) |\n|dev         | [![Build Status](https://app.travis-ci.com/klahnakoski/jx-mysql.svg?branch=dev)](https://travis-ci.com/github/klahnakoski/jx-mysql)    |\n\n',
     long_description_content_type='text/markdown',
     name='jx-mysql',
     packages=["jx_mysql"],
     url='https://github.com/klahnakoski/jx-mysql',
-    version='3.241.22316'
+    version='3.253.22317'
 )
