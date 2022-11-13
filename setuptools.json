@@ -12,7 +12,7 @@
     "extras_require": {"tests": ["mo-testing"]},
     "include_package_data": true,
     "install_requires": [
-             "jx-python==4.258.22317", "mo-collections==5.252.22317",
+             "jx-python==4.259.22317", "mo-collections==5.252.22317",
                "mo-dots==9.251.22317",       "mo-files==5.252.22317",
              "mo-future==6.230.22310",        "mo-http==4.252.22317",
                "mo-json==6.252.22317",      "mo-kwargs==7.252.22317",
@@ -40,5 +40,5 @@
     "name": "jx-mysql",
     "packages": ["jx_mysql", "jx_mysql.expressions", "jx_mysql.models"],
     "url": "https://github.com/klahnakoski/jx-mysql",
-    "version": "3.258.22317"
+    "version": "3.259.22317"
 }
