@@ -28,7 +28,7 @@ from mo_logs.exceptions import Explanation
 from mo_math import randoms
 from mo_times import Timer
 
-DEBUG = True
+DEBUG = False
 
 
 class MySqlSnowflakeExtractor(object):
