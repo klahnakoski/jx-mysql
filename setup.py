@@ -16,5 +16,5 @@ setup(
     name='jx-mysql',
     packages=["jx_mysql","jx_mysql.expressions","jx_mysql.models"],
     url='https://github.com/klahnakoski/jx-mysql',
-    version='3.259.22317'
+    version='3.260.22317'
 )
