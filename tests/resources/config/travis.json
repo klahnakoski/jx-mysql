@@ -8,10 +8,7 @@
 		"password": "root"
 	},
 	"debug":{
-		"trace":true,
-		"constants": {
-			"jx_mysql.mysql.MYSQL_EXECUTABLE": "C:\\Program Files\\MariaDB 10.9\\bin\\mysql"
-		}
+		"trace":true
 	}
 
 }

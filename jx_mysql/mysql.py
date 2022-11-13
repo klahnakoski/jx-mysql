@@ -614,9 +614,9 @@ def execute_sql(host, username, password, sql, schema=None, param=None, kwargs=N
     # have to shell out to the commandline client.
     args = [
         MYSQL_EXECUTABLE,
-        "-h{0}".format(host),
-        "-u{0}".format(username),
-        "-p{0}".format(password),
+        f"-h{host}",
+        f"-u{username}",
+        f"-p{password}",
     ]
     if schema:
         args.append("{0}".format(schema))
